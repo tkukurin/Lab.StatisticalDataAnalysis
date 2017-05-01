@@ -13,21 +13,11 @@ source('data_extraction.r')
 xs <- read_normalize(CSV_DATA)
 xs.log_returns <- to_log_returns_df(xs, 3:length(xs))
 
-xs.market_portfolio <- data.frame(xs$Date,
-                                  xs$InterestRate,
-                                  xs$CROBEX)
-xs.investment <- data.frame(xs$Date, 
-                            xs$InterestRate, 
-                            xs$ERSTEAdriaticEquity,
-                            xs$OTPMeridian20,
-                            xs$ZBAktiv)
-xs.pension <- data.frame(xs$Date,
-                         xs$InterestRate,
-                         xs$RaiffeisenDMF,
-                         xs$ERSTEPlaviEXPERT,
-                         xs$ERSTEPlaviPROTECT)
+xs.market_portfolio <- to_data_frame(xs, "CROBEX", xs.market_portfolio)
+
+xs.investment <- to_data_frame(xs, investment_funds, xs.investment)
+
+xs.pension <- to_data_frame(xs, pension_funds, xs.pension)
 
 source('plotting.r')
 plot_timeseries(xs, xs$Date, xs$CROBEX)
-
-
