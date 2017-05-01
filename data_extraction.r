@@ -32,3 +32,8 @@ to_log_returns_df <- function(xs, columns_to_log_normalize) {
   
   return(xs.log_returns)
 }
+
+to_data_frame <- function(xs, columns_to_add, this) {
+  this <- data.frame(xs[c("Date", "InterestRate", columns_to_add)])
+  return(this)
+}
