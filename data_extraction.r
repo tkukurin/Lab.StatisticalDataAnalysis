@@ -15,5 +15,5 @@ time_series_diff <- function(series, fn) {
 }
 
 diff_function <- function(St, St_minus_one) log(St / St_minus_one)
-
-xs.delta.crobex <- time_series_diff(xs$CROBEX, diff_function)
+xs.log_returns <- lapply( xs[3:length(xs)], function(list) time_series_diff(list, diff_function) )
+xs.log_returns <- data.frame(xs.log_returns)
