@@ -3,6 +3,10 @@ CSV_DATA <- './investicijski_fondovi_data.csv'
 setwd(WORK_DIR)
 
 xs <- read.csv(CSV_DATA)
+
+DATE_FORMAT <- "%d-%B-%Y"
+xs$Date <- as.Date(xs$Date, DATE_FORMAT)
+
 xs_test <- head(xs)
 
 time_series_diff <- function(series, fn) {
