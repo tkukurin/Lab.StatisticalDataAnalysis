@@ -1,4 +1,7 @@
 
+get_data_cols <- function(xs) 3:length(xs)
+get_data_cols_without_market_portfolio <- function(xs) 4:length(xs)
+
 read_normalize <- function(data_location) {
   xs <- read.csv(data_location)
   
@@ -22,7 +25,7 @@ time_series_diff <- function(series, fn) {
 }
 
 to_log_returns_df <- function(xs, columns_to_log_normalize) {
-  diff_function <- function(St, St_minus_one) log(St / St_minus_one)
+  diff_function <- function(St, St_minus_one) log(St) - log(St_minus_one)
   
   xs.log_returns <- lapply( xs[columns_to_log_normalize], function(list) time_series_diff(list, diff_function) )
   xs.log_returns <- data.frame( c(xs[2:nrow(xs), -columns_to_log_normalize], xs.log_returns) )
