@@ -10,4 +10,5 @@ source('data_extraction.r')
 xs <- read_normalize(CSV_DATA)
 xs.log_returns <- to_log_returns_df(xs, 3:length(xs))
 
-source_eval('plotting.r')
+source('plotting.r')
+plot_timeseries(xs, xs$Date, xs$CROBEX)
