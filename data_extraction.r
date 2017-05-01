@@ -24,9 +24,7 @@ time_series_diff <- function(series, fn) {
   return( fn(series_t, series_t_minus_one) )
 }
 
-to_log_returns_df <- function(xs, columns_to_log_normalize) {
-  diff_function <- function(St, St_minus_one) log(St) - log(St_minus_one)
-  
+to_time_series_diff_df <- function(xs, columns_to_log_normalize, diff_function) {
   xs.log_returns <- lapply( xs[columns_to_log_normalize], function(list) time_series_diff(list, diff_function) )
   xs.log_returns <- data.frame( c(xs[2:nrow(xs), -columns_to_log_normalize], xs.log_returns) )
   
