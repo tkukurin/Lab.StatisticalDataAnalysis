@@ -16,4 +16,4 @@ time_series_diff <- function(series, fn) {
 
 diff_function <- function(St, St_minus_one) log(St / St_minus_one)
 xs.log_returns <- lapply( xs[3:length(xs)], function(list) time_series_diff(list, diff_function) )
-xs.log_returns <- data.frame(xs.log_returns)
+xs.log_returns <- data.frame( c(xs[2:nrow(xs), 1:2], xs.log_returns) )
