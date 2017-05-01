@@ -5,7 +5,8 @@ plot_timeseries <- function(xs, x_col, y_col) {
            geom_line() +
            scale_x_date() + 
            xlab("Date") + 
-           ylab("Price")) 
+           ylab("Price") +
+           geom_smooth(method='lm')) 
 }
 
 
