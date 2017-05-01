@@ -2,8 +2,9 @@
 read_normalize <- function(data_location) {
   xs <- read.csv(data_location)
   
-  DATE_FORMAT <- "%d-%B-%Y"
+  lct <- Sys.getlocale("LC_TIME"); Sys.setlocale("LC_TIME", "C")
   xs$Date <- as.Date(xs$Date, DATE_FORMAT)
+  Sys.setlocale("LC_TIME", lct)
   
   return(xs)
 }
