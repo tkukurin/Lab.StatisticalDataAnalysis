@@ -1,13 +1,12 @@
-WORK_DIR <- '~/sem6/statisticka analiza podataka/project'
-CSV_DATA <- './investicijski_fondovi_data.csv'
-setwd(WORK_DIR)
 
-xs <- read.csv(CSV_DATA)
-
-DATE_FORMAT <- "%d-%B-%Y"
-xs$Date <- as.Date(xs$Date, DATE_FORMAT)
-
-xs_test <- head(xs)
+read_normalize <- function(data_location) {
+  xs <- read.csv(data_location)
+  
+  DATE_FORMAT <- "%d-%B-%Y"
+  xs$Date <- as.Date(xs$Date, DATE_FORMAT)
+  
+  return(xs)
+}
 
 time_series_diff <- function(series, fn) {
   n_items <- length(series)
@@ -18,6 +17,11 @@ time_series_diff <- function(series, fn) {
   return( fn(series_t, series_t_minus_one) )
 }
 
-diff_function <- function(St, St_minus_one) log(St / St_minus_one)
-xs.log_returns <- lapply( xs[3:length(xs)], function(list) time_series_diff(list, diff_function) )
-xs.log_returns <- data.frame( c(xs[2:nrow(xs), 1:2], xs.log_returns) )
+to_log_returns_df <- function(xs, columns_to_log_normalize) {
+  diff_function <- function(St, St_minus_one) log(St / St_minus_one)
+  
+  xs.log_returns <- lapply( xs[columns_to_log_normalize], function(list) time_series_diff(list, diff_function) )
+  xs.log_returns <- data.frame( c(xs[2:nrow(xs), -columns_to_log_normalize], xs.log_returns) )
+  
+  return(xs.log_returns)
+}
