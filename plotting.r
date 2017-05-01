@@ -7,3 +7,5 @@ plot_timeseries <- function(xs, x_col, y_col) {
            xlab("Date") + 
            ylab("Price")) 
 }
+
+
