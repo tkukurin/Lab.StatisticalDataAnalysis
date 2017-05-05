@@ -15,6 +15,9 @@ xs <- read_normalize(CSV_DATA)
 
 diff_function_log <- function(St, St_minus_one) log(St) - log(St_minus_one)
 xs.log_returns <- to_time_series_diff_df(xs, get_data_cols(xs), diff_function_log)
+#BRISANJE NERADNIH DANA
+not.zero <- which(xs.log_returns$CROBEX != 0)
+xs.log_returns <- xs.log_returns[not.zero,]
 
 xs.summary <- summary(xs)
 xs.log_returns.summary <- summary(xs.log_returns)
