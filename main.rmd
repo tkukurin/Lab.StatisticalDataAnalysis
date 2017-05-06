@@ -68,7 +68,7 @@ ggplot(df, aes(Date, value)) + geom_line(aes(colour = Fondovi))
 df.returns <- melt(xs.returns[c("Date", investment_funds, pension_funds)], 
                    id.vars = 'Date', 
                    variable.name = 'Fondovi')
-ggplot(df.returns, aes(Date, value)) + geom_boxplot(aes(Fondovi))
+ggplot(df.returns, aes(Date, value)) + geom_boxplot(aes(Fondovi)) + ylim(c(-10, 10))
 
 #plot_timeseries(xs, xs$Date, xs$CROBEX)
 #xs.graphs.timeseries <- mapply( function(data_col, name) plot_timeseries(xs, xs$Date, data_col, name), xs.funds, colnames(xs.funds) )
@@ -77,9 +77,12 @@ ggplot(df.returns, aes(Date, value)) + geom_boxplot(aes(Fondovi))
 #xs.log_returns.graphs.boxplots <- boxplot(xs.log_returns[get_data_cols_without_market_portfolio(xs.log_returns)], ylim = c(-0.1, 0.1) )
 ```
 
-## Testovi sredine
+## Testovi povrata investicijskih fondova u odnosu na CROBEX
 ```{r}
+lapply(xs.returns[investment_funds], function(r) t.test(xs.returns$CROBEX, r))
+```
 
-xs.returns.means <- lapply(xs, FUN = mean)
-xs.returns.mean
+## Testovi povrata mirovinskih fondova u odnosu na CROBEX
+```{r}
+lapply(xs.returns[pension_funds], function(r) t.test(xs.returns$CROBEX, r))
 ```
