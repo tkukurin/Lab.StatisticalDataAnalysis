@@ -1,33 +1,19 @@
-MJERENJE USPJEŠNOSTI INVESTICIJSKIH FONDOVA
+# MJERENJE USPJEŠNOSTI INVESTICIJSKIH FONDOVA
 
 ```{r}
 source_eval <- function(file) source(file, print.eval = TRUE)
-
-# filepaths, etc.
-# globals not common between users
 source_eval('uncommon.r')
-setwd(WORK_DIR)
 ```
-Ekstrakcija i normalizacija podataka
+
+
+## Ekstrakcija i normalizacija podataka
+
 ```{r}
 source('data_extraction.r')
 xs <- read_normalize(CSV_DATA)
-
-diff_function_log <- function(St, St_minus_one) log(St) - log(St_minus_one)
-xs.log_returns <- to_time_series_diff_df(xs, get_data_cols(xs), diff_function_log)
-#BRISANJE NERADNIH DANA
-not.zero <- which(xs.log_returns$CROBEX != 0)
-xs.log_returns <- xs.log_returns[not.zero,]
-
-xs.summary <- summary(xs)
-xs.log_returns.summary <- summary(xs.log_returns)
-
-diff_function_sub <- function(St, St_minus_one) St - St_minus_one
-xs.returns <- to_time_series_diff_df(xs, get_data_cols(xs), diff_function_sub)
-xs.returns.summary <- summary(xs.returns)
 ```
 
-Podjela na investicijske i mirovinske fondove
+### Podjela prema tipovima fondova
 ```{r}
 investment_funds <- c("ERSTEAdriaticEquity", "OTPMeridian20", "ZBAktiv")
 pension_funds <- c("RaiffeisenDMF", "ERSTEPlaviEXPERT", "ERSTEPlaviPROTECT")
@@ -36,17 +22,64 @@ market_portfolio <- c("CROBEX")
 xs.market_portfolio <- to_data_frame(xs, market_portfolio, xs.market_portfolio)
 xs.investment <- to_data_frame(xs, investment_funds, xs.investment)
 xs.pension <- to_data_frame(xs, pension_funds, xs.pension)
+
+data_columns <- c(pension_funds, investment_funds, market_portfolio)
+xs.funds <- xs[, data_columns]
 ```
-Grafički prikaz podataka
+
+### Povrati
+```{r}
+diff_function_log <- function(St, St_minus_one) log(St) - log(St_minus_one)
+xs.log_returns <- to_time_series_diff_df(xs, data_columns, diff_function_log)
+
+diff_function_sub <- function(St, St_minus_one) St - St_minus_one
+xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_sub)
+```
+
+### Sažeci
+```{r}
+xs.summary <- summary(xs.funds)
+xs.returns.summary <- summary(xs.returns[data_columns])
+xs.log_returns.summary <- summary(xs.log_returns[data_columns])
+
+df_summary <- function(summary) {
+  return(data.frame(unclass(summary), check.names = FALSE, stringsAsFactors = FALSE))
+}
+
+df_summary(xs.summary)
+df_summary(xs.returns.summary)
+df_summary(xs.log_returns.summary)
+```
+
+## Grafički prikaz podataka
 ```{r}
 source('plotting.r')
-plot_timeseries(xs, xs$Date, xs$CROBEX)
+require(reshape2)
 
-xs.graphs.timeseries <- lapply( xs[get_data_cols(xs)], function(data_col) plot_timeseries(xs, xs$Date, data_col) )
-xs.graphs.boxplots <- boxplot(xs[get_data_cols_without_market_portfolio(xs)])
-xs.log_returns.graphs.boxplots <- boxplot(xs.log_returns[get_data_cols_without_market_portfolio(xs.log_returns)], ylim = c(-0.1, 0.1) )
+ggplot(xs, aes(Date, CROBEX)) + 
+  geom_line()
+
+df <- melt(xs[c("Date", investment_funds, pension_funds)], 
+           id.vars = 'Date', 
+           variable.name = 'Fondovi')
+ggplot(df, aes(Date, value)) + geom_line(aes(colour = Fondovi))
+
+
+df.returns <- melt(xs.returns[c("Date", investment_funds, pension_funds)], 
+                   id.vars = 'Date', 
+                   variable.name = 'Fondovi')
+ggplot(df.returns, aes(Date, value)) + geom_boxplot(aes(Fondovi))
+
+#plot_timeseries(xs, xs$Date, xs$CROBEX)
+#xs.graphs.timeseries <- mapply( function(data_col, name) plot_timeseries(xs, xs$Date, data_col, name), xs.funds, colnames(xs.funds) )
+#class(xs.graphs.timeseries)
+#xs.graphs.boxplots <- boxplot(xs[get_data_cols_without_market_portfolio(xs)])
+#xs.log_returns.graphs.boxplots <- boxplot(xs.log_returns[get_data_cols_without_market_portfolio(xs.log_returns)], ylim = c(-0.1, 0.1) )
 ```
-Testovi sredine
+
+## Testovi sredine
 ```{r}
 
+xs.returns.means <- lapply(xs, FUN = mean)
+xs.returns.mean
 ```
