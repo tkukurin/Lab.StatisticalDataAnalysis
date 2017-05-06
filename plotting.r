@@ -32,13 +32,14 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   }
 }
 
-plot_timeseries <- function(xs, x_col, y_col) {
+plot_timeseries <- function(xs, x_col, y_col, title) {
   return(ggplot(xs, aes(x_col, y_col)) + 
            geom_line() +
            scale_x_date() + 
            xlab("Date") + 
            ylab("Price") +
-           geom_smooth(method='lm')) 
+           geom_smooth(method='lm') + 
+           labs(title = title))
 }
 
 
