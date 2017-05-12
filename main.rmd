@@ -94,9 +94,10 @@ lapply(xs.returns[pension_funds], function(r) t.test(xs.returns$CROBEX, r))
 
 ## Test povrata investicijskih fondova u odnosu na mirovinske fondove
 ```{r}
+pension_funds
 grouped.return.means = data.frame(Date = xs.returns[,1], 
-                                  MeansPension = rowMeans(xs.returns[,3:5]),
-                                  MeansInvestment = rowMeans(xs.returns[,6:8]))
+                                  MeansPension = rowMeans(xs.returns[pension_funds]),
+                                  MeansInvestment = rowMeans(xs.returns[investment_funds]))
 
 t.test(grouped.return.means$MeansPension, grouped.return.means$MeansInvestment)
 ```
