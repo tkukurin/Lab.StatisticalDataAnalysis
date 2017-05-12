@@ -11,6 +11,8 @@ read_normalize <- function(data_location) {
   xs$Date <- as.Date(xs$Date, DATE_FORMAT)
   Sys.setlocale("LC_TIME", lct)
   
+  xs$InterestRate <- xs$InterestRate / 100
+  
   return(xs)
 }
 
