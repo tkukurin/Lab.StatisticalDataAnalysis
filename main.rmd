@@ -50,12 +50,14 @@ xs.summary <- summary(xs.funds)
 xs.returns.summary <- summary(xs.returns[data_columns])
 xs.log_returns.summary <- summary(xs.log_returns[data_columns])
 
+
 df_summary <- function(summary) {
   return(data.frame(unclass(summary), check.names = FALSE, stringsAsFactors = FALSE))
 }
 ```
 Prikaz mjera vrijednosti po fondovima 
 ```{r}
+
 df_summary(xs.summary)
 ```
 Prikaz mjera vrijednosti povrata po fondovima
@@ -65,6 +67,13 @@ df_summary(xs.returns.summary)
 Prikaz mjera vrijednosti logaritama povrata po fondovima
 ```{r}
 df_summary(xs.log_returns.summary)
+```
+## Mjere raspršenosti
+```{r}
+
+apply(xs.funds,2,var,na.rm=T) 
+apply(xs.funds,2,sd,na.rm=T) 
+
 ```
 
 # Grafički prikaz podataka
@@ -93,6 +102,9 @@ Iz ovih se grafova vidi kako investicijski fondovi(prva tri stupca) imaju puno v
 df.returns <- melt(xs.returns[c("Date", investment_funds, pension_funds)], 
                    id.vars = 'Date', 
                    variable.name = 'Fondovi')
+```
+
+```{r}
 ggplot(df.returns, aes(Date, value)) + geom_boxplot(aes(Fondovi)) + ylim(c(-10, 10))
 ```
 
@@ -121,8 +133,10 @@ lapply(xs.returns[investment_funds], function(r) t.test(xs.returns$CROBEX, r))
 
 ## Testovi povrata mirovinskih fondova u odnosu na CROBEX
 ```{r}
+require(quantmod)
 lapply(xs.returns[pension_funds], function(r) t.test(xs.returns$CROBEX, r))
 ```
+
 
 ## Test povrata investicijskih fondova u odnosu na mirovinske fondove
 
@@ -133,4 +147,40 @@ grouped.return.means = data.frame(Date = xs.returns[,1],
                                   MeansInvestment = rowMeans(xs.returns[investment_funds]))
 
 t.test(grouped.return.means$MeansPension, grouped.return.means$MeansInvestment)
+```
+
+## CAPM model
+
+```{r}
+dates <- xs.returns$Date
+
+year <- function(date) format(date, "%Y")
+get_for_year <- function(df, dates, desired_year) df[year(dates) == desired_year, ]
+
+xs.2010 <- get_for_year(xs.returns, xs.returns$Date, 2010)
+
+zbaktiv.2010 <- xs.2010$ZBAktiv #xs.2010[c('Date', 'ZBAktiv')]
+capm.market.2010 <- xs.2010$CROBEX #xs.2010[c('Date', 'CROBEX')]
+capm.risk_free.2010 <- xs.2010$InterestRate #[c('Date', 'InterestRate')]
+
+lm(formula = zbaktiv.2010 ~ (capm.market.2010 - capm.risk_free.2010))
+```
+
+# CAPM model 2
+```{r}
+require(PerformanceAnalytics)
+library(xts)
+
+#zbaktiv.ts <- xts(zbaktiv.2010[, -1], order.by=zbaktiv.2010$Date)
+#capm.m.ts <-  xts(capm.market.2010[, -1], order.by=capm.market.2010$Date)
+#capm.rf.2010 <- xts(capm.risk_free.2010[, -1], order.by=capm.risk_free.2010$Date) 
+
+CAPM.beta(zbaktiv.ts, capm.m.ts, capm.rf.2010)
+
+qqnorm(xs.returns$ZBAktiv)
+qqline(xs.returns$ZBAktiv)
+
+qqnorm(apply.weekly(xts(xs.returns$ZBAktiv, order.by = xs.returns$Date), mean))
+qqline(apply.weekly(xts(xs.returns$ZBAktiv, order.by = xs.returns$Date), mean))
+
 ```
