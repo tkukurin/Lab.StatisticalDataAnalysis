@@ -152,7 +152,7 @@ qqline(xs.returns$ERSTEPlaviEXPERT)
 
 # Testovi fondova
 
-Iako QQ grafovi pokazuju da povrati nisu normalno raspodijeljeni, radimo tu pretpostavku s obzirom na robusnost T-testa. Također pretpostavljamo nezavisnost podataka, iako je jasno da globalni događaji (kriza, teroristički napadi,...) često mogu utjecati na cijelo tržište odjednom.
+Iako QQ grafovi pokazuju da povrati nisu normalno raspodijeljeni, radimo tu pretpostavku s obzirom na robusnost T-testa. Jasno je da globalni događaji (kriza, teroristički napadi,...) često utječu na cijelo tržište odjednom, pa koristimo T-testove za uparene podatke.
 
 
 ## Testovi povrata investicijskih fondova u odnosu na CROBEX
