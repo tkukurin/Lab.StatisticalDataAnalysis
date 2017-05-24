@@ -1,5 +1,8 @@
-# MJERENJE USPJEŠNOSTI INVESTICIJSKIH FONDOVA
-
+---
+title: "SAP - MJERENJE USPJEŠNOSTI INVESTICIJSKIH FONDOVA"
+output: pdf_document
+---
+# Priprema podataka
 ```{r}
 source_eval <- function(file) source(file, print.eval = TRUE)
 source_eval('uncommon.r')
@@ -14,6 +17,7 @@ xs <- read_normalize(CSV_DATA)
 ```
 
 ### Podjela prema tipovima fondova
+
 ```{r}
 investment_funds <- c("ERSTEAdriaticEquity", "OTPMeridian20", "ZBAktiv")
 pension_funds <- c("RaiffeisenDMF", "ERSTEPlaviEXPERT", "ERSTEPlaviPROTECT")
@@ -28,12 +32,16 @@ xs.funds <- xs[, data_columns]
 ```
 
 ### Povrati
+Računanje dnevnih povrata
 ```{r}
 diff_function_log <- function(St, St_minus_one) log(St) - log(St_minus_one)
 xs.log_returns <- to_time_series_diff_df(xs, data_columns, diff_function_log)
 
 diff_function_sub <- function(St, St_minus_one) St - St_minus_one
 xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_sub)
+
+#weekly.returns <- to_week_returns(xs.returns, weekly.returns)
+
 ```
 
 ### Sažeci
@@ -42,26 +50,54 @@ xs.summary <- summary(xs.funds)
 xs.returns.summary <- summary(xs.returns[data_columns])
 xs.log_returns.summary <- summary(xs.log_returns[data_columns])
 
-df_summary <- function(summary) data.frame(unclass(summary), check.names = FALSE, stringsAsFactors = FALSE)
+
+df_summary <- function(summary) {
+  return(data.frame(unclass(summary), check.names = FALSE, stringsAsFactors = FALSE))
+}
+```
+Prikaz mjera vrijednosti po fondovima 
+```{r}
 
 df_summary(xs.summary)
+```
+Prikaz mjera vrijednosti povrata po fondovima
+```{r}
 df_summary(xs.returns.summary)
+```
+Prikaz mjera vrijednosti logaritama povrata po fondovima
+```{r}
 df_summary(xs.log_returns.summary)
 ```
-
-## Grafički prikaz podataka
+## Mjere raspršenosti
 ```{r}
+
+apply(xs.funds,2,var,na.rm=T) 
+apply(xs.funds,2,sd,na.rm=T) 
+
+```
+
+# Grafički prikaz podataka
+```{r include=FALSE}
 source('plotting.r')
 require(reshape2)
+```
 
-ggplot(xs, aes(Date, CROBEX)) + 
-  geom_line()
+### Prikaz vrijednosti CROBEX-a po danima
+```{r}
+ggplot(xs, aes(Date, CROBEX)) + geom_line()
+```
 
+### Prikaz vrijednosti investicijskih i mirovinskih fondova po danima 
+```{r}
 df <- melt(xs[c("Date", investment_funds, pension_funds)], 
            id.vars = 'Date', 
            variable.name = 'Fondovi')
 ggplot(df, aes(Date, value)) + geom_line(aes(colour = Fondovi))
+```
+## Prikaz boxplotova za sve fondove
 
+Iz ovih se grafova vidi kako investicijski fondovi(prva tri stupca) imaju puno više stršećih vrijednosti, odnosno podložniji su varijacijama. 
+```{r warning=FALSE}
 
 df.returns <- melt(xs.returns[c("Date", investment_funds, pension_funds)], 
                    id.vars = 'Date', 
@@ -70,14 +106,26 @@ df.returns <- melt(xs.returns[c("Date", investment_funds, pension_funds)],
 
 ```{r}
 ggplot(df.returns, aes(Date, value)) + geom_boxplot(aes(Fondovi)) + ylim(c(-10, 10))
+```
 
+Sljedećim q-q plotom želimo ispitati normalnost distribucije burzovnog indeksa. Iz grafa vidimo kako podaci baš i nisu normalni, a iz sljedećeg grafa, gdje su isti podaci prikazani na histogramu se vidi i zašto. Pošto ima dosta stršećih vrijednosti, repovi su teški. 
+```{r}
+qqnorm(xs.returns$CROBEX)
+qqline(xs.returns$CROBEX, col = "red")
+hist(xs.returns$CROBEX, breaks = seq(from = min(xs.returns$CROBEX) - 0.5, to = max(xs.returns$CROBEX) + 0.5, length = 50))
+```
+
+Sljedećim grafom htjela se ispitati normalnost jednog mirovinskog fonda. Vidimo kako ni on nema baš normalnu distribuciju.
+```{r}
+qqnorm(xs.returns$ERSTEPlaviEXPERT)
+qqline(xs.returns$ERSTEPlaviEXPERT)
 #plot_timeseries(xs, xs$Date, xs$CROBEX)
 #xs.graphs.timeseries <- mapply( function(data_col, name) plot_timeseries(xs, xs$Date, data_col, name), xs.funds, colnames(xs.funds) )
 #class(xs.graphs.timeseries)
 #xs.graphs.boxplots <- boxplot(xs[get_data_cols_without_market_portfolio(xs)])
 #xs.log_returns.graphs.boxplots <- boxplot(xs.log_returns[get_data_cols_without_market_portfolio(xs.log_returns)], ylim = c(-0.1, 0.1) )
 ```
-
+# TESTOVI NAD FONDOVIMA 
 ## Testovi povrata investicijskih fondova u odnosu na CROBEX
 ```{r}
 lapply(xs.returns[investment_funds], function(r) t.test(xs.returns$CROBEX, r))
@@ -89,6 +137,17 @@ require(quantmod)
 lapply(xs.returns[pension_funds], function(r) t.test(xs.returns$CROBEX, r))
 ```
 
+
+## Test povrata investicijskih fondova u odnosu na mirovinske fondove
+
+Izračunate su sredine mirovinskih i investicijskih fondova pa je sproveden test jednakosti dviju sredina. Dobivamo p-vrijednost 0.0039, i zaključujemo kako možemo odbaciti hipotezu kako su sredine jednake.
+```{r}
+grouped.return.means = data.frame(Date = xs.returns[,1], 
+                                  MeansPension = rowMeans(xs.returns[pension_funds]),
+                                  MeansInvestment = rowMeans(xs.returns[investment_funds]))
+
+t.test(grouped.return.means$MeansPension, grouped.return.means$MeansInvestment)
+```
 
 ## CAPM model
 
@@ -142,19 +201,3 @@ head( xs.log_returns$CROBEX )
 
 #xs.returns[xs.returns$CROBEX > 50, c('Date', 'CROBEX')]
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
