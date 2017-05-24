@@ -50,12 +50,9 @@ df_summary(xs.log_returns.summary)
 ```
 ## Mjere raspršenosti
 ```{r}
-xs.funds
-ColumnVar <- function(x) {
-  colSums((x - colMeans(x))^2)/(dim(x)[2] - 1)
-}
-ColumnVar(xs.funds) 
-sd(xs.funds$CROBEX)
+
+apply(xs.funds,2,var,na.rm=T) 
+apply(xs.funds,2,sd,na.rm=T) 
 
 ```
 
