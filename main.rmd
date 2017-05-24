@@ -194,7 +194,7 @@ zbaktiv.2010 <- xs.2010$ZBAktiv #xs.2010[c('Date', 'ZBAktiv')]
 capm.market.2010 <- xs.2010$CROBEX #xs.2010[c('Date', 'CROBEX')]
 capm.risk_free.2010 <- xs.2010$InterestRate.daily #[c('Date', 'InterestRate.daily')]
 
-lm(formula = zbaktiv.2010 ~ (capm.market.2010 - capm.risk_free.2010))
+lm(formula = (zbaktiv.2010 - capm.risk_free.2010) ~ (capm.market.2010 - capm.risk_free.2010))
 ```
 
 # CAPM model 2
@@ -215,6 +215,7 @@ zbaktiv.ts <- xts(zbaktiv.2010[, -1], order.by=zbaktiv.2010$Date)
 capm.m.ts <-  xts(capm.market.2010[, -1], order.by=capm.market.2010$Date)
 capm.rf.2010 <- xts(capm.risk_free.2010[, -1], order.by=capm.risk_free.2010$Date) 
 
+CAPM.alpha(zbaktiv.ts, capm.m.ts, capm.rf.2010)
 CAPM.beta(zbaktiv.ts, capm.m.ts, capm.rf.2010)
 ```
 
