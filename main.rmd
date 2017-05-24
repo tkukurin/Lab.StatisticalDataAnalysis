@@ -42,9 +42,7 @@ xs.summary <- summary(xs.funds)
 xs.returns.summary <- summary(xs.returns[data_columns])
 xs.log_returns.summary <- summary(xs.log_returns[data_columns])
 
-df_summary <- function(summary) {
-  return(data.frame(unclass(summary), check.names = FALSE, stringsAsFactors = FALSE))
-}
+df_summary <- function(summary) data.frame(unclass(summary), check.names = FALSE, stringsAsFactors = FALSE)
 
 df_summary(xs.summary)
 df_summary(xs.returns.summary)
@@ -68,6 +66,9 @@ ggplot(df, aes(Date, value)) + geom_line(aes(colour = Fondovi))
 df.returns <- melt(xs.returns[c("Date", investment_funds, pension_funds)], 
                    id.vars = 'Date', 
                    variable.name = 'Fondovi')
+```
+
+```{r}
 ggplot(df.returns, aes(Date, value)) + geom_boxplot(aes(Fondovi)) + ylim(c(-10, 10))
 
 #plot_timeseries(xs, xs$Date, xs$CROBEX)
@@ -84,5 +85,72 @@ lapply(xs.returns[investment_funds], function(r) t.test(xs.returns$CROBEX, r))
 
 ## Testovi povrata mirovinskih fondova u odnosu na CROBEX
 ```{r}
+require(quantmod)
 lapply(xs.returns[pension_funds], function(r) t.test(xs.returns$CROBEX, r))
+
+capm.risk_free <- xs.returns$InterestRate
+capm.market <- xs.returns$CROBEX
+capm.observed <- xs.returns$ZBAktiv
+
+capm.df <- data.frame(capm.risk_free, capm.market, capm.observed)
+capm.df
+
+lm(formula = capm.observed ~ I(capm.risk_free) + (capm.market - capm.risk_free), data = capm.df)
+?I
 ```
+
+```{r}
+dates <- xs.returns$Date
+
+year <- function(date) format(date, "%Y")
+get_for_year <- function(df, dates, desired_year) df[year(dates) == desired_year, ]
+
+xs.2010 <- get_for_year(xs.returns, xs.returns$Date, 2010)
+
+zbaktiv.2010 <- xs.2010$ZBAktiv #xs.2010[c('Date', 'ZBAktiv')]
+capm.market.2010 <- xs.2010$CROBEX #xs.2010[c('Date', 'CROBEX')]
+capm.risk_free.2010 <- xs.2010$InterestRate #[c('Date', 'InterestRate')]
+
+lm(formula = zbaktiv.2010 ~ (capm.market.2010 - capm.risk_free.2010))
+
+require(PerformanceAnalytics)
+zbaktiv.2010
+
+library(xts)
+#zbaktiv.ts <- xts(zbaktiv.2010[, -1], order.by=zbaktiv.2010$Date)
+#capm.m.ts <-  xts(capm.market.2010[, -1], order.by=capm.market.2010$Date)
+#capm.rf.2010 <- xts(capm.risk_free.2010[, -1], order.by=capm.risk_free.2010$Date) 
+
+CAPM.beta(zbaktiv.ts, capm.m.ts, capm.rf.2010)
+zbaktiv.ts
+
+# to.weekly(stocks$Hero_close, name="Hero")
+zbaktiv.2010 <- xs.2010[c('Date', 'ZBAktiv')]
+zbaktiv.week <- to.weekly(xts(zbaktiv.2010[, -1], order.by=zbaktiv.2010$Date))
+?to.weekly
+
+quantile(zbaktiv.week)
+
+qqnorm(xs.returns$ZBAktiv)
+qqline(xs.returns$ZBAktiv)
+
+qqnorm(apply.weekly(xts(xs.returns$ZBAktiv, order.by = xs.returns$Date), mean))
+qqline(apply.weekly(xts(xs.returns$ZBAktiv, order.by = xs.returns$Date), mean))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
