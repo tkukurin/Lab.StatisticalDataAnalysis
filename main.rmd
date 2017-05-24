@@ -48,6 +48,13 @@ df_summary(xs.summary)
 df_summary(xs.returns.summary)
 df_summary(xs.log_returns.summary)
 ```
+## Mjere raspršenosti
+```{r}
+
+apply(xs.funds,2,var,na.rm=T) 
+apply(xs.funds,2,sd,na.rm=T) 
+
+```
 
 ## Grafički prikaz podataka
 ```{r}
