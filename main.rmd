@@ -1,22 +1,20 @@
 ---
-title: "SAP - MJERENJE USPJEŠNOSTI INVESTICIJSKIH FONDOVA"
+title: "Mjerenje uspješnosti investicijskih fondova"
 output: pdf_document
 ---
 # Priprema podataka
 ```{r}
 source_eval <- function(file) source(file, print.eval = TRUE)
 source_eval('uncommon.r')
-```
 
-
-## Ekstrakcija i normalizacija podataka
-
-```{r}
 source('data_extraction.r')
 xs <- read_normalize(CSV_DATA)
 ```
 
-### Podjela prema tipovima fondova
+
+# Priprema i analiza podataka
+
+## Podjela prema tipovima fondova
 
 ```{r}
 investment_funds <- c("ERSTEAdriaticEquity", "OTPMeridian20", "ZBAktiv")
@@ -31,7 +29,8 @@ data_columns <- c(pension_funds, investment_funds, market_portfolio)
 xs.funds <- xs[, data_columns]
 ```
 
-### Povrati
+## Povrati
+
 Računanje dnevnih povrata
 ```{r}
 diff_function_log <- function(St, St_minus_one) log(St) - log(St_minus_one)
@@ -42,7 +41,8 @@ xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_log)
 
 ```
 
-### Sažeci
+
+## Sažeci
 ```{r}
 xs.summary <- summary(xs.funds)
 xs.returns.summary <- summary(xs.returns[data_columns])
@@ -51,16 +51,10 @@ xs.returns.summary <- summary(xs.returns[data_columns])
 df_summary <- function(summary) {
   return(data.frame(unclass(summary), check.names = FALSE, stringsAsFactors = FALSE))
 }
-```
-Prikaz mjera vrijednosti po fondovima 
-```{r}
+
 df_summary(xs.summary)
 ```
 
-Prikaz mjera vrijednosti logaritama povrata po fondovima
-```{r}
-df_summary(xs.log_returns.summary)
-```
 
 ## Mjere raspršenosti
 ```{r}
@@ -76,12 +70,15 @@ source('plotting.r')
 require(reshape2)
 ```
 
-### Prikaz vrijednosti CROBEX-a po danima
+## Prikaz vrijednosti CROBEX-a po danima
 ```{r}
 ggplot(xs, aes(Date, CROBEX)) + geom_line()
 ```
 
-### Prikaz vrijednosti investicijskih i mirovinskih fondova po danima 
+## Prikaz vrijednosti investicijskih i mirovinskih fondova po danima 
+
+TODO: izbacivanje stršećih (Erste Adriatic Equity)
+
 ```{r}
 df <- melt(xs[c("Date", investment_funds, pension_funds)], 
            id.vars = 'Date', 
@@ -91,7 +88,8 @@ ggplot(df, aes(Date, value)) + geom_line(aes(colour = Fondovi))
 
 ## Prikaz boxplotova za sve fondove
 
-Iz ovih se grafova vidi kako investicijski fondovi(prva tri stupca) imaju puno više stršećih vrijednosti, odnosno podložniji su varijacijama. 
+Iz ovih se grafova vidi kako investicijski fondovi (prva tri stupca) imaju puno više stršećih vrijednosti, odnosno podložniji su varijacijama. 
+
 ```{r warning=FALSE}
 
 df.returns <- melt(xs.returns[c("Date", investment_funds, pension_funds)], 
@@ -100,10 +98,17 @@ df.returns <- melt(xs.returns[c("Date", investment_funds, pension_funds)],
 ```
 
 ```{r}
-ggplot(df.returns, aes(Date, value)) + geom_boxplot(aes(Fondovi)) + ylim(c(-10, 10))
+ggplot(df.returns, aes(Date, value)) + 
+  geom_boxplot(aes(Fondovi)) + 
+  xlab("Fondovi") + 
+  ylab("Povrati")
 ```
 
+
+## Provjera normalnosti
+
 Sljedećim q-q plotom želimo ispitati normalnost distribucije burzovnog indeksa. Iz grafa vidimo kako podaci baš i nisu normalni, a iz sljedećeg grafa, gdje su isti podaci prikazani na histogramu se vidi i zašto. S obzirom na velik broj stršećih vrijednosti, primjećujemo teške repove.
+
 ```{r}
 qqnorm(xs.returns$CROBEX)
 qqline(xs.returns$CROBEX, col = "red")
@@ -111,9 +116,30 @@ hist(xs.returns$CROBEX, breaks = seq(from = min(xs.returns$CROBEX) - 0.5, to = m
 ```
 
 Sljedećim grafom htjela se ispitati normalnost jednog mirovinskog fonda. Vidimo kako ni on nema baš normalnu distribuciju.
+
 ```{r}
 qqnorm(xs.returns$ERSTEPlaviEXPERT)
 qqline(xs.returns$ERSTEPlaviEXPERT)
+#qqnorm(xs.returns$ZBAktiv)
+#qqline(xs.returns$ZBAktiv)
+
+#qqnorm(apply.weekly(xts(xs.returns$ZBAktiv, order.by = xs.returns$Date), mean))
+#qqline(apply.weekly(xts(xs.returns$ZBAktiv, order.by = xs.returns$Date), mean))
+
+#PerformanceAnalytics::chart.QQPlot(xs.returns$ZBAktiv)
+#PerformanceAnalytics::chart.Regression(zbaktiv.ts, capm.m.ts, capm.rf.2010,
+#                                       excess.returns = TRUE, fit = c("loess", "linear"))
+#PerformanceAnalytics::SharpeRatio(capm.m.ts)
+
+# xs.log_returns <- lapply( xs[columns_to_log_normalize], function(list) time_series_diff(list, diff_function) )
+# xs.log_returns <- data.frame( c(xs[2:nrow(xs), !(colnames(xs) %in% columns_to_log_normalize)], xs.log_returns) )
+
+#xs.xts <- xts(xs['CROBEX'], order.by = xs$Date)
+#head( PerformanceAnalytics::Return.calculate(xs.xts) )
+#head( xs.log_returns$CROBEX )
+
+#xs.returns[xs.returns$CROBEX > 50, c('Date', 'CROBEX')]
+
 #plot_timeseries(xs, xs$Date, xs$CROBEX)
 #xs.graphs.timeseries <- mapply( function(data_col, name) plot_timeseries(xs, xs$Date, data_col, name), xs.funds, colnames(xs.funds) )
 #class(xs.graphs.timeseries)
@@ -121,9 +147,10 @@ qqline(xs.returns$ERSTEPlaviEXPERT)
 #xs.log_returns.graphs.boxplots <- boxplot(xs.log_returns[get_data_cols_without_market_portfolio(xs.log_returns)], ylim = c(-0.1, 0.1) )
 ```
 
-# TESTOVI NAD FONDOVIMA 
 
-Iako testovi pokazuju da povrati nisu normalno raspodijeljeni, radimo tu pretpostavku s obzirom na robusnost T-testa. Također pretpostavljamo nezavisnost podataka, iako je jasno da globalni događaji (kriza, teroristički napadi,...) često mogu utjecati na cijelo tržište odjednom.
+# Testovi fondova
+
+Iako QQ grafovi pokazuju da povrati nisu normalno raspodijeljeni, radimo tu pretpostavku s obzirom na robusnost T-testa. Također pretpostavljamo nezavisnost podataka, iako je jasno da globalni događaji (kriza, teroristički napadi,...) često mogu utjecati na cijelo tržište odjednom.
 
 
 ## Testovi povrata investicijskih fondova u odnosu na CROBEX
@@ -134,7 +161,6 @@ lapply(xs.returns[investment_funds], function(r) t.test(xs.returns$CROBEX, r, pa
 
 ## Testovi povrata mirovinskih fondova u odnosu na CROBEX
 ```{r}
-require(quantmod)
 lapply(xs.returns[pension_funds], function(r) t.test(xs.returns$CROBEX, r, paired = TRUE))
 ```
 
@@ -151,7 +177,8 @@ grouped.return.means = data.frame(Date = xs.returns[,1],
 t.test(grouped.return.means$MeansPension, grouped.return.means$MeansInvestment, paired = TRUE)
 ```
 
-## CAPM model
+
+# CAPM model
 
 ```{r}
 dates <- xs.returns$Date
@@ -163,44 +190,28 @@ xs.2010 <- get_for_year(xs.returns, xs.returns$Date, 2010)
 
 zbaktiv.2010 <- xs.2010$ZBAktiv #xs.2010[c('Date', 'ZBAktiv')]
 capm.market.2010 <- xs.2010$CROBEX #xs.2010[c('Date', 'CROBEX')]
-capm.risk_free.2010 <- xs.2010$InterestRate #[c('Date', 'InterestRate')]
+capm.risk_free.2010 <- xs.2010$InterestRate.daily #[c('Date', 'InterestRate.daily')]
 
 lm(formula = zbaktiv.2010 ~ (capm.market.2010 - capm.risk_free.2010))
 ```
 
 # CAPM model 2
+
+TODO: tablica modela (alpha / beta)
+TODO: regresija / vrijednosti i raspodjela reziduala
+
 ```{r}
+require(quantmod)
 require(PerformanceAnalytics)
 library(xts)
 
 zbaktiv.2010 <- xs.2010[c('Date', 'ZBAktiv')]
 capm.market.2010 <- xs.2010[c('Date', 'CROBEX')]
-capm.risk_free.2010 <- xs.2010[c('Date', 'InterestRate')]
+capm.risk_free.2010 <- xs.2010[c('Date', 'InterestRate.daily')]
 
 zbaktiv.ts <- xts(zbaktiv.2010[, -1], order.by=zbaktiv.2010$Date)
 capm.m.ts <-  xts(capm.market.2010[, -1], order.by=capm.market.2010$Date)
 capm.rf.2010 <- xts(capm.risk_free.2010[, -1], order.by=capm.risk_free.2010$Date) 
 
 CAPM.beta(zbaktiv.ts, capm.m.ts, capm.rf.2010)
-
-qqnorm(xs.returns$ZBAktiv)
-qqline(xs.returns$ZBAktiv)
-
-qqnorm(apply.weekly(xts(xs.returns$ZBAktiv, order.by = xs.returns$Date), mean))
-qqline(apply.weekly(xts(xs.returns$ZBAktiv, order.by = xs.returns$Date), mean))
-
-PerformanceAnalytics::char
-PerformanceAnalytics::chart.QQPlot(xs.returns$ZBAktiv)
-PerformanceAnalytics::chart.Regression(zbaktiv.ts, capm.m.ts, capm.rf.2010,
-                                       excess.returns = TRUE, fit = c("loess", "linear"))
-PerformanceAnalytics::SharpeRatio(capm.m.ts)
-
-# xs.log_returns <- lapply( xs[columns_to_log_normalize], function(list) time_series_diff(list, diff_function) )
-# xs.log_returns <- data.frame( c(xs[2:nrow(xs), !(colnames(xs) %in% columns_to_log_normalize)], xs.log_returns) )
-
-xs.xts <- xts(xs['CROBEX'], order.by = xs$Date)
-head( PerformanceAnalytics::Return.calculate(xs.xts) )
-head( xs.log_returns$CROBEX )
-
-#xs.returns[xs.returns$CROBEX > 50, c('Date', 'CROBEX')]
 ```
