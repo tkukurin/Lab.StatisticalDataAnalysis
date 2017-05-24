@@ -102,7 +102,7 @@ xs.2010 <- get_for_year(xs.returns, xs.returns$Date, 2010)
 
 zbaktiv.2010 <- xs.2010$ZBAktiv #xs.2010[c('Date', 'ZBAktiv')]
 capm.market.2010 <- xs.2010$CROBEX #xs.2010[c('Date', 'CROBEX')]
-capm.risk_free.2010 <- xs.2010$InterestRate #[c('Date', 'InterestRate')]
+capm.risk_free.2010 <- xs.2010$InterestRate / (365 * 100) #[c('Date', 'InterestRate')]
 
 lm(formula = zbaktiv.2010 ~ (capm.market.2010 - capm.risk_free.2010))
 ```
@@ -112,11 +112,15 @@ lm(formula = zbaktiv.2010 ~ (capm.market.2010 - capm.risk_free.2010))
 require(PerformanceAnalytics)
 library(xts)
 
-#zbaktiv.ts <- xts(zbaktiv.2010[, -1], order.by=zbaktiv.2010$Date)
-#capm.m.ts <-  xts(capm.market.2010[, -1], order.by=capm.market.2010$Date)
-#capm.rf.2010 <- xts(capm.risk_free.2010[, -1], order.by=capm.risk_free.2010$Date) 
+zbaktiv.2010 <- xs.2010[c('Date', 'ZBAktiv')]
+capm.market.2010 <- xs.2010[c('Date', 'CROBEX')]
+capm.risk_free.2010 <- xs.2010[c('Date', 'InterestRate')]
 
-CAPM.beta(zbaktiv.ts, capm.m.ts, capm.rf.2010)
+zbaktiv.ts <- xts(zbaktiv.2010[, -1], order.by=zbaktiv.2010$Date)
+capm.m.ts <-  xts(capm.market.2010[, -1], order.by=capm.market.2010$Date)
+capm.rf.2010 <- xts(capm.risk_free.2010[, -1], order.by=capm.risk_free.2010$Date) 
+
+CAPM.beta(zbaktiv.ts, capm.m.ts, capm.rf.2010 / (365 * 100))
 
 qqnorm(xs.returns$ZBAktiv)
 qqline(xs.returns$ZBAktiv)
@@ -124,6 +128,19 @@ qqline(xs.returns$ZBAktiv)
 qqnorm(apply.weekly(xts(xs.returns$ZBAktiv, order.by = xs.returns$Date), mean))
 qqline(apply.weekly(xts(xs.returns$ZBAktiv, order.by = xs.returns$Date), mean))
 
+PerformanceAnalytics::chart.QQPlot(xs.returns$ZBAktiv)
+PerformanceAnalytics::chart.Regression(zbaktiv.ts, capm.m.ts, capm.rf.2010,
+                                       excess.returns = TRUE, fit = c("loess", "linear"))
+PerformanceAnalytics::SharpeRatio(capm.m.ts)
+
+# xs.log_returns <- lapply( xs[columns_to_log_normalize], function(list) time_series_diff(list, diff_function) )
+# xs.log_returns <- data.frame( c(xs[2:nrow(xs), !(colnames(xs) %in% columns_to_log_normalize)], xs.log_returns) )
+
+xs.xts <- xts(xs['CROBEX'], order.by = xs$Date)
+head( PerformanceAnalytics::Return.calculate(xs.xts) )
+head( xs.log_returns$CROBEX )
+
+#xs.returns[xs.returns$CROBEX > 50, c('Date', 'CROBEX')]
 ```
 
 
