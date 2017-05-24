@@ -199,9 +199,10 @@ zbaktiv.model <- lm(formula = (zbaktiv.2010 - capm.risk_free.2010) ~ (capm.marke
 ## Provjera reziduala
 
 TODO: regresija / vrijednosti i raspodjela reziduala
-# https://www.r-bloggers.com/r-tutorial-series-simple-linear-regression/
 
 ```{r}
+# https://www.r-bloggers.com/r-tutorial-series-simple-linear-regression/
+
 zbaktiv.model.summary <- summary(zbaktiv.model)
 zbaktiv.model.residuals <- zbaktiv.model.summary$residuals
 hist(zbaktiv.model.residuals)
