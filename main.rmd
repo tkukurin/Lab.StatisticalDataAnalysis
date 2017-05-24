@@ -35,12 +35,10 @@ xs.funds <- xs[, data_columns]
 Računanje dnevnih povrata
 ```{r}
 diff_function_log <- function(St, St_minus_one) log(St) - log(St_minus_one)
-xs.log_returns <- to_time_series_diff_df(xs, data_columns, diff_function_log)
+xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_log)
 
-diff_function_sub <- function(St, St_minus_one) St - St_minus_one
-xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_sub)
-
-#weekly.returns <- to_week_returns(xs.returns, weekly.returns)
+#diff_function_sub <- function(St, St_minus_one) St - St_minus_one
+#xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_sub)
 
 ```
 
@@ -48,8 +46,7 @@ xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_sub)
 ```{r}
 xs.summary <- summary(xs.funds)
 xs.returns.summary <- summary(xs.returns[data_columns])
-xs.log_returns.summary <- summary(xs.log_returns[data_columns])
-
+# xs.log_returns.summary <- summary(xs.log_returns[data_columns])
 
 df_summary <- function(summary) {
   return(data.frame(unclass(summary), check.names = FALSE, stringsAsFactors = FALSE))
@@ -57,22 +54,19 @@ df_summary <- function(summary) {
 ```
 Prikaz mjera vrijednosti po fondovima 
 ```{r}
-
 df_summary(xs.summary)
 ```
-Prikaz mjera vrijednosti povrata po fondovima
-```{r}
-df_summary(xs.returns.summary)
-```
+
 Prikaz mjera vrijednosti logaritama povrata po fondovima
 ```{r}
 df_summary(xs.log_returns.summary)
 ```
+
 ## Mjere raspršenosti
 ```{r}
 
-apply(xs.funds,2,var,na.rm=T) 
-apply(xs.funds,2,sd,na.rm=T) 
+apply(xs.returns, 2, var, na.rm=T) 
+apply(xs.returns, 2, sd, na.rm=T) 
 
 ```
 
@@ -94,6 +88,7 @@ df <- melt(xs[c("Date", investment_funds, pension_funds)],
            variable.name = 'Fondovi')
 ggplot(df, aes(Date, value)) + geom_line(aes(colour = Fondovi))
 ```
+
 ## Prikaz boxplotova za sve fondove
 
 Iz ovih se grafova vidi kako investicijski fondovi(prva tri stupca) imaju puno više stršećih vrijednosti, odnosno podložniji su varijacijama. 
@@ -108,7 +103,7 @@ df.returns <- melt(xs.returns[c("Date", investment_funds, pension_funds)],
 ggplot(df.returns, aes(Date, value)) + geom_boxplot(aes(Fondovi)) + ylim(c(-10, 10))
 ```
 
-Sljedećim q-q plotom želimo ispitati normalnost distribucije burzovnog indeksa. Iz grafa vidimo kako podaci baš i nisu normalni, a iz sljedećeg grafa, gdje su isti podaci prikazani na histogramu se vidi i zašto. Pošto ima dosta stršećih vrijednosti, repovi su teški. 
+Sljedećim q-q plotom želimo ispitati normalnost distribucije burzovnog indeksa. Iz grafa vidimo kako podaci baš i nisu normalni, a iz sljedećeg grafa, gdje su isti podaci prikazani na histogramu se vidi i zašto. S obzirom na velik broj stršećih vrijednosti, primjećujemo teške repove.
 ```{r}
 qqnorm(xs.returns$CROBEX)
 qqline(xs.returns$CROBEX, col = "red")
@@ -125,28 +120,35 @@ qqline(xs.returns$ERSTEPlaviEXPERT)
 #xs.graphs.boxplots <- boxplot(xs[get_data_cols_without_market_portfolio(xs)])
 #xs.log_returns.graphs.boxplots <- boxplot(xs.log_returns[get_data_cols_without_market_portfolio(xs.log_returns)], ylim = c(-0.1, 0.1) )
 ```
+
 # TESTOVI NAD FONDOVIMA 
+
+Iako testovi pokazuju da povrati nisu normalno raspodijeljeni, radimo tu pretpostavku s obzirom na robusnost T-testa. Također pretpostavljamo nezavisnost podataka, iako je jasno da globalni događaji (kriza, teroristički napadi,...) često mogu utjecati na cijelo tržište odjednom.
+
+
 ## Testovi povrata investicijskih fondova u odnosu na CROBEX
 ```{r}
-lapply(xs.returns[investment_funds], function(r) t.test(xs.returns$CROBEX, r))
+lapply(xs.returns[investment_funds], function(r) t.test(xs.returns$CROBEX, r, paired = TRUE))
 ```
+
 
 ## Testovi povrata mirovinskih fondova u odnosu na CROBEX
 ```{r}
 require(quantmod)
-lapply(xs.returns[pension_funds], function(r) t.test(xs.returns$CROBEX, r))
+lapply(xs.returns[pension_funds], function(r) t.test(xs.returns$CROBEX, r, paired = TRUE))
 ```
 
 
 ## Test povrata investicijskih fondova u odnosu na mirovinske fondove
 
-Izračunate su sredine mirovinskih i investicijskih fondova pa je sproveden test jednakosti dviju sredina. Dobivamo p-vrijednost 0.0039, i zaključujemo kako možemo odbaciti hipotezu kako su sredine jednake.
+Izračunate su sredine mirovinskih i investicijskih fondova pa je sproveden test njihovih vrijednosti. Dobivamo izrazito malu p-vrijednost, stoga uz veliku sigurnost zaključujemo da možemo odbaciti nul-hipotezu koja tvrdi da su sredine jednake.
+
 ```{r}
 grouped.return.means = data.frame(Date = xs.returns[,1], 
                                   MeansPension = rowMeans(xs.returns[pension_funds]),
                                   MeansInvestment = rowMeans(xs.returns[investment_funds]))
 
-t.test(grouped.return.means$MeansPension, grouped.return.means$MeansInvestment)
+t.test(grouped.return.means$MeansPension, grouped.return.means$MeansInvestment, paired = TRUE)
 ```
 
 ## CAPM model
@@ -161,7 +163,7 @@ xs.2010 <- get_for_year(xs.returns, xs.returns$Date, 2010)
 
 zbaktiv.2010 <- xs.2010$ZBAktiv #xs.2010[c('Date', 'ZBAktiv')]
 capm.market.2010 <- xs.2010$CROBEX #xs.2010[c('Date', 'CROBEX')]
-capm.risk_free.2010 <- xs.2010$InterestRate / (365 * 100) #[c('Date', 'InterestRate')]
+capm.risk_free.2010 <- xs.2010$InterestRate #[c('Date', 'InterestRate')]
 
 lm(formula = zbaktiv.2010 ~ (capm.market.2010 - capm.risk_free.2010))
 ```
@@ -179,7 +181,7 @@ zbaktiv.ts <- xts(zbaktiv.2010[, -1], order.by=zbaktiv.2010$Date)
 capm.m.ts <-  xts(capm.market.2010[, -1], order.by=capm.market.2010$Date)
 capm.rf.2010 <- xts(capm.risk_free.2010[, -1], order.by=capm.risk_free.2010$Date) 
 
-CAPM.beta(zbaktiv.ts, capm.m.ts, capm.rf.2010 / (365 * 100))
+CAPM.beta(zbaktiv.ts, capm.m.ts, capm.rf.2010)
 
 qqnorm(xs.returns$ZBAktiv)
 qqline(xs.returns$ZBAktiv)
@@ -187,6 +189,7 @@ qqline(xs.returns$ZBAktiv)
 qqnorm(apply.weekly(xts(xs.returns$ZBAktiv, order.by = xs.returns$Date), mean))
 qqline(apply.weekly(xts(xs.returns$ZBAktiv, order.by = xs.returns$Date), mean))
 
+PerformanceAnalytics::char
 PerformanceAnalytics::chart.QQPlot(xs.returns$ZBAktiv)
 PerformanceAnalytics::chart.Regression(zbaktiv.ts, capm.m.ts, capm.rf.2010,
                                        excess.returns = TRUE, fit = c("loess", "linear"))
