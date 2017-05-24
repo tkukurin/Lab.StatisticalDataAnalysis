@@ -45,14 +45,14 @@ xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_log)
 ## Sažeci
 ```{r}
 xs.summary <- summary(xs.funds)
-xs.returns.summary <- summary(xs.returns[data_columns])
+xs.returns.summary <- summary(xs.returns[data_columns] * 365)
 # xs.log_returns.summary <- summary(xs.log_returns[data_columns])
 
 df_summary <- function(summary) {
   return(data.frame(unclass(summary), check.names = FALSE, stringsAsFactors = FALSE))
 }
 
-df_summary(xs.summary)
+df_summary(xs.returns.summary)
 ```
 
 
@@ -107,12 +107,12 @@ ggplot(df.returns, aes(Date, value)) +
 
 ## Provjera normalnosti
 
-Sljedećim q-q plotom želimo ispitati normalnost distribucije burzovnog indeksa. Iz grafa vidimo kako podaci baš i nisu normalni, a iz sljedećeg grafa, gdje su isti podaci prikazani na histogramu se vidi i zašto. S obzirom na velik broj stršećih vrijednosti, primjećujemo teške repove.
+Sljedećim q-q plotom želimo ispitati normalnost distribucije burzovnog indeksa. Iz prvog grafa vidimo kako podaci nisu u potpunosti normalni, a iz sljedećeg, gdje su isti podaci prikazani na histogramu, jasno je i zašto. Teške repove primjećujemo radi velike granulacije, tj. dnevnog računanja prinosa; u tako kratkom roku zna se dogoditi da pojedina dionica ili naglo naraste ili naglo padne u vrijednosti.
 
 ```{r}
 qqnorm(xs.returns$CROBEX)
 qqline(xs.returns$CROBEX, col = "red")
-hist(xs.returns$CROBEX, breaks = seq(from = min(xs.returns$CROBEX) - 0.5, to = max(xs.returns$CROBEX) + 0.5, length = 50))
+hist(xs.returns$CROBEX) #, breaks = seq(from = min(xs.returns$CROBEX) - 0.5, to = max(xs.returns$CROBEX) + 0.5, length = 50))
 ```
 
 Sljedećim grafom htjela se ispitati normalnost jednog mirovinskog fonda. Vidimo kako ni on nema baš normalnu distribuciju.
