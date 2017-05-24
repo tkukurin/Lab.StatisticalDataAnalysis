@@ -87,17 +87,10 @@ lapply(xs.returns[investment_funds], function(r) t.test(xs.returns$CROBEX, r))
 ```{r}
 require(quantmod)
 lapply(xs.returns[pension_funds], function(r) t.test(xs.returns$CROBEX, r))
-
-capm.risk_free <- xs.returns$InterestRate
-capm.market <- xs.returns$CROBEX
-capm.observed <- xs.returns$ZBAktiv
-
-capm.df <- data.frame(capm.risk_free, capm.market, capm.observed)
-capm.df
-
-lm(formula = capm.observed ~ I(capm.risk_free) + (capm.market - capm.risk_free), data = capm.df)
-?I
 ```
+
+
+## CAPM model
 
 ```{r}
 dates <- xs.returns$Date
@@ -112,24 +105,18 @@ capm.market.2010 <- xs.2010$CROBEX #xs.2010[c('Date', 'CROBEX')]
 capm.risk_free.2010 <- xs.2010$InterestRate #[c('Date', 'InterestRate')]
 
 lm(formula = zbaktiv.2010 ~ (capm.market.2010 - capm.risk_free.2010))
+```
 
+# CAPM model 2
+```{r}
 require(PerformanceAnalytics)
-zbaktiv.2010
-
 library(xts)
+
 #zbaktiv.ts <- xts(zbaktiv.2010[, -1], order.by=zbaktiv.2010$Date)
 #capm.m.ts <-  xts(capm.market.2010[, -1], order.by=capm.market.2010$Date)
 #capm.rf.2010 <- xts(capm.risk_free.2010[, -1], order.by=capm.risk_free.2010$Date) 
 
 CAPM.beta(zbaktiv.ts, capm.m.ts, capm.rf.2010)
-zbaktiv.ts
-
-# to.weekly(stocks$Hero_close, name="Hero")
-zbaktiv.2010 <- xs.2010[c('Date', 'ZBAktiv')]
-zbaktiv.week <- to.weekly(xts(zbaktiv.2010[, -1], order.by=zbaktiv.2010$Date))
-?to.weekly
-
-quantile(zbaktiv.week)
 
 qqnorm(xs.returns$ZBAktiv)
 qqline(xs.returns$ZBAktiv)
