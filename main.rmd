@@ -88,7 +88,7 @@ ggplot(df, aes(Date, value)) + geom_line(aes(colour = Fondovi))
 
 ## Prikaz boxplotova za sve fondove
 
-Iz ovih se grafova vidi kako investicijski fondovi (prva tri stupca) imaju puno više stršećih vrijednosti, odnosno podložniji su varijacijama. 
+Iz ovih se grafova vidi kako su investicijski fondovi (prva tri stupca) podložniji većim promjenama vrijednosti od mirovinskih na dnevnoj bazi.
 
 ```{r warning=FALSE}
 
@@ -193,14 +193,29 @@ xs.2010 <- get_for_year(xs.returns, xs.returns$Date, 2010)
 zbaktiv.2010 <- xs.2010$ZBAktiv #xs.2010[c('Date', 'ZBAktiv')]
 capm.market.2010 <- xs.2010$CROBEX #xs.2010[c('Date', 'CROBEX')]
 capm.risk_free.2010 <- xs.2010$InterestRate.daily #[c('Date', 'InterestRate.daily')]
+zbaktiv.model <- lm(formula = (zbaktiv.2010 - capm.risk_free.2010) ~ (capm.market.2010 - capm.risk_free.2010))
+```
 
-lm(formula = (zbaktiv.2010 - capm.risk_free.2010) ~ (capm.market.2010 - capm.risk_free.2010))
+## Provjera reziduala
+
+TODO: regresija / vrijednosti i raspodjela reziduala
+# https://www.r-bloggers.com/r-tutorial-series-simple-linear-regression/
+
+```{r}
+zbaktiv.model.summary <- summary(zbaktiv.model)
+zbaktiv.model.residuals <- zbaktiv.model.summary$residuals
+hist(zbaktiv.model.residuals)
+plot(zbaktiv.model.residuals)
+
+qqnorm(rstandard(zbaktiv.model))
+qqline(rstandard(zbaktiv.model))
+
+ks.test(rstandard(zbaktiv.model), 'pnorm')
 ```
 
 # CAPM model 2
 
 TODO: tablica modela (alpha / beta)
-TODO: regresija / vrijednosti i raspodjela reziduala
 
 ```{r}
 require(quantmod)
