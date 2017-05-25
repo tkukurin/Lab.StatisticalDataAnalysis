@@ -205,6 +205,7 @@ TODO: regresija / vrijednosti i raspodjela reziduala
 
 zbaktiv.model.summary <- summary(zbaktiv.model)
 zbaktiv.model.residuals <- zbaktiv.model.summary$residuals
+
 hist(zbaktiv.model.residuals)
 plot(zbaktiv.model.residuals)
 
@@ -233,6 +234,8 @@ capm.rf.2010 <- xts(capm.risk_free.2010[, -1], order.by=capm.risk_free.2010$Date
 
 CAPM.alpha(zbaktiv.ts, capm.m.ts, capm.rf.2010)
 CAPM.beta(zbaktiv.ts, capm.m.ts, capm.rf.2010)
+
+anova(zbaktiv.model)
 ```
 
 TODO: ANOVA
