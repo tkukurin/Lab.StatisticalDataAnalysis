@@ -35,6 +35,8 @@ Računanje dnevnih povrata
 ```{r}
 diff_function_log <- function(St, St_minus_one) log(St) - log(St_minus_one)
 xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_log)
+#Postavljanje velikih skokova u 0
+xs.returns$ERSTEAdriaticEquity[2211:2212] <- 0
 
 #diff_function_sub <- function(St, St_minus_one) St - St_minus_one
 #xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_sub)
@@ -206,6 +208,7 @@ zbaktiv.model.residuals <- zbaktiv.model.summary$residuals
 
 hist(zbaktiv.model.residuals)
 plot(zbaktiv.model.residuals)
+abline(0,0)
 
 qqnorm(rstandard(zbaktiv.model))
 qqline(rstandard(zbaktiv.model))
@@ -248,7 +251,18 @@ for (i in 1:length(xs.fund.names)){
 colnames(xs.capm) <- c("fond - godina", "alpha", "beta")
 xs.capm
 
+#PROVJERA REZIDUALA
+zbaktiv.2010.res <- matrix(ncol = 1, nrow = 361)
+zbaktiv.2010.alpha <- xs.capm[15, 2]
+zbaktiv.2010.beta <- xs.capm[15, 3]
+for (i in 1:length(zbaktiv.2010)) {
+  zbaktiv.2010.res[i, 1] <- (zbaktiv.2010[i] - capm.risk_free.2010[i]) - 
+    (zbaktiv.2010.alpha + zbaktiv.2010.beta * (capm.market.2010[i] - capm.risk_free.2010[i]))
+}
+zbaktiv.2010.res
 
+qqnorm(zbaktiv.2010.res)
+qqline(zbaktiv.2010.res)
 #zbaktiv.2010 <- xs.2010[c('Date', 'ZBAktiv')]
 #capm.market.2010 <- xs.2010[c('Date', 'CROBEX')]
 #capm.risk_free.2010 <- xs.2010[c('Date', 'InterestRate.daily')]
