@@ -19,6 +19,7 @@ xs <- read_normalize(CSV_DATA)
 ```{r}
 investment_funds <- c("ERSTEAdriaticEquity", "OTPMeridian20", "ZBAktiv")
 pension_funds <- c("RaiffeisenDMF", "ERSTEPlaviEXPERT", "ERSTEPlaviPROTECT")
+all_funds <- c(investment_funds, pension_funds)
 market_portfolio <- c("CROBEX")
 
 xs.market_portfolio <- to_data_frame(xs, market_portfolio, xs.market_portfolio)
@@ -27,6 +28,7 @@ xs.pension <- to_data_frame(xs, pension_funds, xs.pension)
 
 data_columns <- c(pension_funds, investment_funds, market_portfolio)
 xs.funds <- xs[, data_columns]
+
 ```
 
 ## Povrati
@@ -59,8 +61,8 @@ df_summary(xs.returns.summary)
 ## Mjere raspršenosti
 ```{r}
 
-apply(xs.returns[,-1:-3], 2, var, na.rm=T) 
-apply(xs.returns[,-1:-3], 2, sd, na.rm=T) 
+apply(xs.returns[all_funds] * 365, 2, var, na.rm=T) 
+apply(xs.returns[all_funds] * 365, 2, sd, na.rm=T)
 
 ```
 
@@ -224,16 +226,19 @@ library(xts)
 
 get_capm_for_year <- function(df, fund, desired_year){
   xs.year = get_for_year(df, df$Date, desired_year)
+  
   fund.year <- xs.year[c('Date', fund)]
-  capm.market.year <- xs.year[c('Date', 'CROBEX')]
-  capm.risk_free.year <- xs.year[c('Date', 'InterestRate.daily')]
   fund.ts <- xts(fund.year[, -1], order.by=fund.year$Date)
   
+  capm.index.year <- xs.year[c('Date', 'CROBEX')]
+  capm.index.ts <-  xts(capm.index.year[, -1], order.by=capm.index.year$Date)
   
-  capm.m.ts <-  xts(capm.market.year[, -1], order.by=capm.market.year$Date)
-  capm.rf.year <- xts(capm.risk_free.year[, -1], order.by=capm.risk_free.year$Date)
+  capm.risk_free.year <- xs.year[c('Date', 'InterestRate.daily')]
+  capm.risk_free.year <- capm.risk_free.year[1, -1]
   
-  data.frame(sprintf('%s-%d', fund, desired_year), CAPM.alpha(fund.ts, capm.m.ts, capm.rf.year), CAPM.beta(fund.ts, capm.m.ts, capm.rf.year))
+  data.frame(fund, as.factor(desired_year),
+             CAPM.alpha(fund.ts, capm.index.ts, capm.risk_free.year), 
+             CAPM.beta(fund.ts, capm.index.ts, capm.risk_free.year))
 }
 
 xs.years = seq(from = 2010, by = 1, length = 7)
@@ -245,22 +250,15 @@ for (i in 1:length(xs.fund.names)){
     xs.capm <- rbind(xs.capm, get_capm_for_year(xs.returns, xs.fund.names[i], xs.years[j]))
   }
 }
-colnames(xs.capm) <- c("fond - godina", "alpha", "beta")
+
+colnames(xs.capm) <- c("Fund", "Year", "Alpha", "Beta")
 xs.capm
 
+ggplot(xs.capm, aes(Year, Beta, color= Fund, group = Fund)) + 
+  geom_point() + geom_line()
+ggplot(xs.capm, aes(Year, Alpha, color= Fund, group = Fund)) + 
+  geom_point() + geom_line()
 
-#zbaktiv.2010 <- xs.2010[c('Date', 'ZBAktiv')]
-#capm.market.2010 <- xs.2010[c('Date', 'CROBEX')]
-#capm.risk_free.2010 <- xs.2010[c('Date', 'InterestRate.daily')]
-
-#zbaktiv.ts <- xts(zbaktiv.2010[, -1], order.by=zbaktiv.2010$Date)
-#capm.m.ts <-  xts(capm.market.2010[, -1], order.by=capm.market.2010$Date)
-#capm.rf.2010 <- xts(capm.risk_free.2010[, -1], order.by=capm.risk_free.2010$Date) 
-
-#CAPM.alpha(zbaktiv.ts, capm.m.ts, capm.rf.2010)
-#CAPM.beta(zbaktiv.ts, capm.m.ts, capm.rf.2010)
-
-anova(zbaktiv.model)
 ```
 
 TODO: ANOVA
