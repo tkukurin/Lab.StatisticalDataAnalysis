@@ -62,7 +62,7 @@ df_summary(xs.returns.summary)
 ```{r}
 
 apply(xs.returns[all_funds] * 365, 2, var, na.rm=T) 
-apply(xs.returns[all_funds] * 365, 2, sd, na.rm=T)
+apply(xs.returns[all_funds] * sqrt(365), 2, sd, na.rm=T)
 
 ```
 
@@ -110,9 +110,18 @@ ggplot(df.returns, aes(Date, value)) +
 Sljedećim q-q plotom želimo ispitati normalnost distribucije burzovnog indeksa. Iz prvog grafa vidimo kako podaci nisu u potpunosti normalni, a iz sljedećeg, gdje su isti podaci prikazani na histogramu, jasno je i zašto. Teške repove primjećujemo radi velike granulacije, tj. dnevnog računanja prinosa; u tako kratkom roku zna se dogoditi da pojedina dionica ili naglo naraste ili naglo padne u vrijednosti.
 
 ```{r}
-qqnorm(xs.returns$CROBEX)
-qqline(xs.returns$CROBEX, col = "red")
-hist(xs.returns$CROBEX) #, breaks = seq(from = min(xs.returns$CROBEX) - 0.5, to = max(xs.returns$CROBEX) + 0.5, length = 50))
+library(magrittr)
+plot_returns <- function(fund.returns, fund.name) hist(fund.returns, 
+                                                       main = fund.name, 
+                                                       density=20, 
+                                                       xlab='Log returns', 
+                                                       labels=TRUE, 
+                                                       breaks=10)
+mapply(plot_returns, 
+       c(xs.returns[c(pension_funds, investment_funds)]), 
+       c(pension_funds, investment_funds)) %>% 
+  invisible
+
 ```
 
 Sljedećim grafom htjela se ispitati normalnost jednog mirovinskog fonda. Vidimo kako ni on nema baš normalnu distribuciju.
@@ -169,7 +178,7 @@ lapply(xs.returns[pension_funds], function(r) t.test(xs.returns$CROBEX, r, paire
 
 ## Test povrata investicijskih fondova u odnosu na mirovinske fondove
 
-Izračunate su sredine mirovinskih i investicijskih fondova pa je sproveden test njihovih vrijednosti. Dobivamo izrazito malu p-vrijednost, stoga uz veliku sigurnost zaključujemo da možemo odbaciti nul-hipotezu koja tvrdi da su sredine jednake.
+Izračunate su sredine mirovinskih i investicijskih fondova pa je sproveden test njihovih vrijednosti. Dobivamo izrazito malu p-vrijednost, stoga uz relativno veliku sigurnost zaključujemo da možemo odbaciti nul-hipotezu koja tvrdi da su sredine jednake.
 
 ```{r}
 grouped.return.means = data.frame(Date = xs.returns[,1], 
@@ -261,5 +270,10 @@ ggplot(xs.capm, aes(Year, Alpha, color= Fund, group = Fund)) +
 
 ```
 
-TODO: ANOVA
+# ANOVA
+```{r}
+
+lapply()
+
+```
 
