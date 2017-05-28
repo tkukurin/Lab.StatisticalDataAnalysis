@@ -175,16 +175,15 @@ Iako QQ grafovi pokazuju da povrati nisu normalno raspodijeljeni, radimo tu pret
 
 ## Testovi povrata investicijskih fondova u odnosu na CROBEX
 ```{r}
-mapply(function(fund.returns) t.test(xs.returns$CROBEX, fund.returns, paired = TRUE),
-       xs.returns[investment_funds])
+compare.to.index <- function(index) function(fund.returns) t.test(index, fund.returns, paired = TRUE)
+mapply(compare.to.index(xs.returns$CROBEX), xs.returns[investment_funds])
 ```
 
 
 ## Testovi povrata mirovinskih fondova u odnosu na CROBEX
 
 ```{r}
-mapply(function(fund.returns) t.test(xs.returns$CROBEX, fund.returns, paired = TRUE),
-       xs.returns[pension_funds])
+mapply(compare.to.index(xs.returns$CROBEX), xs.returns[pension_funds])
 ```
 
 
