@@ -129,8 +129,17 @@ Sljedećim grafom htjela se ispitati normalnost jednog mirovinskog fonda. Vidimo
 TODO: Kolmogorov-smirnov
 
 ```{r}
-qqnorm(xs.returns$ERSTEPlaviEXPERT)
-qqline(xs.returns$ERSTEPlaviEXPERT)
+
+qqplots <- function(fund.returns, fund.name) {
+  qqnorm(fund.returns) 
+  qqline(fund.returns)
+}
+
+mapply(qqplots, 
+       c(xs.returns[c(pension_funds, investment_funds)]), 
+       c(pension_funds, investment_funds)) %>% 
+  invisible
+
 #qqnorm(xs.returns$ZBAktiv)
 #qqline(xs.returns$ZBAktiv)
 
@@ -166,13 +175,16 @@ Iako QQ grafovi pokazuju da povrati nisu normalno raspodijeljeni, radimo tu pret
 
 ## Testovi povrata investicijskih fondova u odnosu na CROBEX
 ```{r}
-lapply(xs.returns[investment_funds], function(r) t.test(xs.returns$CROBEX, r, paired = TRUE))
+mapply(function(fund.returns) t.test(xs.returns$CROBEX, fund.returns, paired = TRUE),
+       xs.returns[investment_funds])
 ```
 
 
 ## Testovi povrata mirovinskih fondova u odnosu na CROBEX
+
 ```{r}
-lapply(xs.returns[pension_funds], function(r) t.test(xs.returns$CROBEX, r, paired = TRUE))
+mapply(function(fund.returns) t.test(xs.returns$CROBEX, fund.returns, paired = TRUE),
+       xs.returns[pension_funds])
 ```
 
 
