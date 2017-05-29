@@ -309,8 +309,8 @@ get_residuals_norm <- function(df, row) {
   residuals.tmp <- vector(mode="numeric", length=length(xs.tmpYearFund))
   
   for (i in 1:length(xs.tmpYearFund)) {
-    residuals.tmp[i] <- (xs.tmpYearFund[i] - capm.risk_free.year[i]) - 
-    (df[row,3] + df[row, 4] * (capm.market.year[i] - capm.risk_free.year[i]))
+    residuals.tmp[i] <- ((xs.tmpYearFund[i] - capm.risk_free.year[i]) - 
+    (df[row,3] + df[row, 4] * (capm.market.year[i] - capm.risk_free.year[i])))^2
   }
   
   x<-ks.test(residuals.tmp, 'pnorm')
