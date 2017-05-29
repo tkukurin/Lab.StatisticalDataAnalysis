@@ -3,6 +3,8 @@ title: "Mjerenje uspješnosti investicijskih fondova"
 output: pdf_document
 ---
 # Priprema podataka
+Prilikom proučavanja podataka primjetili smo da vrijednost fonda ErsteAdriaticEquity za 24.1.2016. poprilično odskače od okolnih datuma. Pretragom na stranici Erste grupe ustvrdili smo pogrešku u unosu podataka te smo ručno ispravili vrijednost.
+
 ```{r}
 source_eval <- function(file) source(file, print.eval = TRUE)
 source_eval('uncommon.r')
