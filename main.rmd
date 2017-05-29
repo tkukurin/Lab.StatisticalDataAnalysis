@@ -98,16 +98,31 @@ df.returns <- melt(xs.returns[c("Date", investment_funds, pension_funds)],
 ```
 
 ```{r}
+library(stringr)
+
+label_prettify <- function(label) {
+  first_matches <- str_match(label, "(^[A-Z]+)([A-Z][a-z]+)(.*)")
+  second_matches <- str_match(label, "(^[A-Z][a-z]+)([A-Z]+)")
+  
+  first_word <- ifelse(!is.na(first_matches[1, 1]), first_matches[1, 2], second_matches[1, 2])
+  second_word <- ifelse(!is.na(first_matches[1, 1]), first_matches[1, 3], second_matches[1, 3])
+  second_word <- ifelse(!is.na(first_matches[1, 4]), str_c(second_word, first_matches[1, 4], sep = " "), second_word)
+  
+  return(str_c(first_word, second_word,sep = " ") %>% str_wrap(width = 10))
+}
+
 ggplot(df.returns, aes(Date, value)) + 
   geom_boxplot(aes(Fondovi)) + 
   xlab("Fondovi") + 
-  ylab("Povrati")
+  ylab("Povrati") +
+  scale_x_discrete(labels = function(labels) return(lapply(labels, label_prettify)))
+
 ```
 
 
 ## Provjera normalnosti
 
-Sljedećim q-q plotom želimo ispitati normalnost distribucije burzovnog indeksa. Iz prvog grafa vidimo kako podaci nisu u potpunosti normalni, a iz sljedećeg, gdje su isti podaci prikazani na histogramu, jasno je i zašto. Teške repove primjećujemo radi velike granulacije, tj. dnevnog računanja prinosa; u tako kratkom roku zna se dogoditi da pojedina dionica ili naglo naraste ili naglo padne u vrijednosti.
+Sljedećim QQ grafovima želimo ispitati normalnost distribucije burzovnog indeksa. Iz QQ grafa vidimo kako podaci nisu u potpunosti normalni, a iz histograma jasno je i zašto. Teške repove primjećujemo radi sitne granulacije, tj. dnevnog računanja prinosa; u tako kratkom roku zna se dogoditi da pojedina dionica ili naglo naraste ili naglo padne u vrijednosti.
 
 ```{r}
 library(magrittr)
@@ -124,14 +139,12 @@ mapply(plot_returns,
 
 ```
 
-Sljedećim grafom htjela se ispitati normalnost jednog mirovinskog fonda. Vidimo kako ni on nema baš normalnu distribuciju.
-
 TODO: Kolmogorov-smirnov
 
 ```{r}
 
 qqplots <- function(fund.returns, fund.name) {
-  qqnorm(fund.returns) 
+  qqnorm(fund.returns, main = fund.name) 
   qqline(fund.returns)
 }
 
@@ -140,12 +153,6 @@ mapply(qqplots,
        c(pension_funds, investment_funds)) %>% 
   invisible
 
-#qqnorm(xs.returns$ZBAktiv)
-#qqline(xs.returns$ZBAktiv)
-
-#qqnorm(apply.weekly(xts(xs.returns$ZBAktiv, order.by = xs.returns$Date), mean))
-#qqline(apply.weekly(xts(xs.returns$ZBAktiv, order.by = xs.returns$Date), mean))
-
 #PerformanceAnalytics::chart.QQPlot(xs.returns$ZBAktiv)
 #PerformanceAnalytics::chart.Regression(zbaktiv.ts, capm.m.ts, capm.rf.2010,
 #                                       excess.returns = TRUE, fit = c("loess", "linear"))
@@ -153,18 +160,8 @@ mapply(qqplots,
 
 # xs.log_returns <- lapply( xs[columns_to_log_normalize], function(list) time_series_diff(list, diff_function) )
 # xs.log_returns <- data.frame( c(xs[2:nrow(xs), !(colnames(xs) %in% columns_to_log_normalize)], xs.log_returns) )
-
 #xs.xts <- xts(xs['CROBEX'], order.by = xs$Date)
-#head( PerformanceAnalytics::Return.calculate(xs.xts) )
-#head( xs.log_returns$CROBEX )
 
-#xs.returns[xs.returns$CROBEX > 50, c('Date', 'CROBEX')]
-
-#plot_timeseries(xs, xs$Date, xs$CROBEX)
-#xs.graphs.timeseries <- mapply( function(data_col, name) plot_timeseries(xs, xs$Date, data_col, name), xs.funds, colnames(xs.funds) )
-#class(xs.graphs.timeseries)
-#xs.graphs.boxplots <- boxplot(xs[get_data_cols_without_market_portfolio(xs)])
-#xs.log_returns.graphs.boxplots <- boxplot(xs.log_returns[get_data_cols_without_market_portfolio(xs.log_returns)], ylim = c(-0.1, 0.1) )
 ```
 
 
@@ -175,7 +172,8 @@ Iako QQ grafovi pokazuju da povrati nisu normalno raspodijeljeni, radimo tu pret
 
 ## Testovi povrata investicijskih fondova u odnosu na CROBEX
 ```{r}
-compare.to.index <- function(index) function(fund.returns) t.test(index, fund.returns, paired = TRUE)
+compare.to.index <- function(index) function(fund.returns) t.test(index, fund.returns, 
+                                                                  paired = TRUE)
 mapply(compare.to.index(xs.returns$CROBEX), xs.returns[investment_funds])
 ```
 
@@ -192,7 +190,7 @@ mapply(compare.to.index(xs.returns$CROBEX), xs.returns[pension_funds])
 Izračunate su sredine mirovinskih i investicijskih fondova pa je sproveden test njihovih vrijednosti. Dobivamo izrazito malu p-vrijednost, stoga uz relativno veliku sigurnost zaključujemo da možemo odbaciti nul-hipotezu koja tvrdi da su sredine jednake.
 
 ```{r}
-grouped.return.means = data.frame(Date = xs.returns[,1], 
+grouped.return.means = data.frame(Date = xs.returns$Date, 
                                   MeansPension = rowMeans(xs.returns[pension_funds]),
                                   MeansInvestment = rowMeans(xs.returns[investment_funds]))
 
@@ -284,7 +282,7 @@ ggplot(xs.capm, aes(Year, Alpha, color= Fund, group = Fund)) +
 # ANOVA
 ```{r}
 
-lapply()
+zbaktiv.2010 - (xs.2010$CROBEX )
 
 ```
 
