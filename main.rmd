@@ -39,6 +39,8 @@ Računanje dnevnih povrata
 ```{r}
 diff_function_log <- function(St, St_minus_one) log(St) - log(St_minus_one)
 xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_log)
+#Postavljanje velikih skokova u 0
+#xs.returns$ERSTEAdriaticEquity[2211:2212] <- 0
 
 #diff_function_sub <- function(St, St_minus_one) St - St_minus_one
 #xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_sub)
@@ -214,6 +216,7 @@ zbaktiv.2010 <- xs.2010$ZBAktiv #xs.2010[c('Date', 'ZBAktiv')]
 capm.market.2010 <- xs.2010$CROBEX #xs.2010[c('Date', 'CROBEX')]
 capm.risk_free.2010 <- xs.2010$InterestRate.daily #[c('Date', 'InterestRate.daily')]
 zbaktiv.model <- lm(formula = (zbaktiv.2010 - capm.risk_free.2010) ~ (capm.market.2010 - capm.risk_free.2010))
+head(zbaktiv.model)
 ```
 
 ## Provjera reziduala
@@ -228,6 +231,7 @@ zbaktiv.model.residuals <- zbaktiv.model.summary$residuals
 
 hist(zbaktiv.model.residuals)
 plot(zbaktiv.model.residuals)
+abline(0,0)
 
 qqnorm(rstandard(zbaktiv.model))
 qqline(rstandard(zbaktiv.model))
@@ -281,10 +285,49 @@ ggplot(xs.capm, aes(Year, Alpha, color= Fund, group = Fund)) +
 
 ```
 
+## PROVJERA NORMALNOSTI REZIDUALA
+
+```{r warning=FALSE}
+nrows = nrow(xs.capm)
+#for(i in 1:361) {
+#  xs.capm[as.character(i)] <- as.vector(matrix(0,nrow=nrows))
+#}
+#
+xs.capm["ks_p_val"] <- as.vector(0)
+get_residuals_norm <- function(df, row) {
+  xs.tmpYear <- get_for_year(xs.returns, xs.returns$Date, df[row,'Year'])
+  fund <- as.character(df[row, 'Fund'])
+  xs.tmpYearFund <- xs.tmpYear[,fund]
+  
+  capm.risk_free.year <- xs.tmpYear$InterestRate.daily #[c('Date', 'InterestRate.daily')]
+  capm.market.year <- xs.tmpYear$CROBEX
+  
+  residuals.tmp <- vector(mode="numeric", length=length(xs.tmpYearFund))
+  
+  for (i in 1:length(xs.tmpYearFund)) {
+    residuals.tmp[i] <- ((xs.tmpYearFund[i] - capm.risk_free.year[i]) - 
+    (df[row,3] + df[row, 4] * (capm.market.year[i] - capm.risk_free.year[i])))
+  }
+  
+  scaled.residuals.tmp <- scale(residuals.tmp)
+  
+  x<-ks.test(scaled.residuals.tmp, 'pnorm')
+  
+  df[row, 'ks_p_val'] <- x$p.value
+  
+  return(df)
+}
+
+for(i in 1:nrows) {
+  xs.capm <- get_residuals_norm(xs.capm, i)
+}
+
+xs.capm
+```
+
+
 # ANOVA
 ```{r}
-
-zbaktiv.2010 - (xs.2010$CROBEX )
 
 ```
 

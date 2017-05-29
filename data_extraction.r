@@ -36,14 +36,3 @@ to_data_frame <- function(xs, columns_to_add, this) {
   this <- data.frame(xs[c("Date", "InterestRate", columns_to_add)])
   return(this)
 }
-
-#to_week_returns <- function(returns) {
-#  new.frame <- data.frame(names(returns))
-#  names(new.frame) <- names(returns)
-#  for(i in 1:2) {
-#    rows <- returns[i,]
-#    this <- rbind(new.frame, rows)
-#  }
-#  return(new.frame)
-#}
-
