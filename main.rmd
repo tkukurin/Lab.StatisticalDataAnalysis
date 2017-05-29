@@ -2,15 +2,19 @@
 title: "Mjerenje uspješnosti investicijskih fondova"
 output: pdf_document
 ---
+
 # Priprema podataka
 Prilikom proučavanja podataka primjetili smo da vrijednost fonda ErsteAdriaticEquity za 24.1.2016. poprilično odskače od okolnih datuma. Pretragom na stranici Erste grupe ustvrdili smo pogrešku u unosu podataka te smo ručno ispravili vrijednost.
 
 ```{r}
-source_eval <- function(file) source(file, print.eval = TRUE)
-source_eval('uncommon.r')
-
+library(magrittr)
+library(ggplot2)
+library(stringr)
+library(xts)
+require(quantmod)
+require(PerformanceAnalytics)
 source('data_extraction.r')
-xs <- read_normalize(CSV_DATA)
+xs <- read_normalize('./investicijski_fondovi_data.csv')
 ```
 
 
@@ -21,11 +25,10 @@ xs <- read_normalize(CSV_DATA)
 ```{r}
 investment_funds <- c("ERSTEAdriaticEquity", "OTPMeridian20", "ZBAktiv")
 pension_funds <- c("RaiffeisenDMF", "ERSTEPlaviEXPERT", "ERSTEPlaviPROTECT")
-all_funds <- c(investment_funds, pension_funds)
 market_portfolio <- c("CROBEX")
-data_columns <- c(pension_funds, investment_funds, market_portfolio)
 
-xs.funds <- xs[, data_columns]
+all_funds <- c(investment_funds, pension_funds)
+data_columns <- c(pension_funds, investment_funds, market_portfolio)
 ```
 
 ## Povrati
@@ -39,7 +42,6 @@ xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_log)
 
 ## Sažeci
 ```{r}
-xs.summary <- summary(xs.funds)
 xs.returns.summary <- summary(xs.returns[data_columns] * 365)
 data.frame(unclass(xs.returns.summary), check.names = FALSE, stringsAsFactors = FALSE)
 ```
@@ -47,17 +49,13 @@ data.frame(unclass(xs.returns.summary), check.names = FALSE, stringsAsFactors = 
 
 ## Mjere raspršenosti
 ```{r}
-variances <- apply(xs.returns[all_funds] * 365, 2, var, na.rm=T) 
-std.devs <- apply(xs.returns[all_funds] * sqrt(365), 2, sd, na.rm=T)
+variances <- apply(xs.returns[all_funds] * 365, 2, var, na.rm = T) 
+std.devs <- apply(xs.returns[all_funds] * sqrt(365), 2, sd, na.rm = T)
 
 data.frame(std.devs, variances)
 ```
 
 # Grafički prikaz podataka
-```{r include=FALSE}
-source('plotting.r')
-require(reshape2)
-```
 
 ## Prikaz vrijednosti CROBEX-a po danima
 ```{r}
@@ -84,8 +82,6 @@ df.returns <- melt(xs.returns[c("Date", investment_funds, pension_funds)],
 ```
 
 ```{r}
-library(stringr)
-
 label_prettify <- function(label) {
   first_matches <- str_match(label, "(^[A-Z]+)([A-Z][a-z]+)(.*)")
   second_matches <- str_match(label, "(^[A-Z][a-z]+)([A-Z]+)")
@@ -113,7 +109,6 @@ ggplot(df.returns, aes(Date, value)) +
 Sljedećim QQ grafovima želimo ispitati normalnost distribucije burzovnog indeksa. Iz QQ grafa vidimo kako podaci nisu u potpunosti normalni, a iz histograma jasno je i zašto. Teške repove primjećujemo radi sitne granulacije, tj. dnevnog računanja prinosa; u tako kratkom roku zna se dogoditi da pojedina dionica ili naglo naraste ili naglo padne u vrijednosti.
 
 ```{r}
-library(magrittr)
 plot_returns <- function(fund.returns, fund.name) hist(fund.returns, 
                                                        main = fund.name, 
                                                        density=20, 
@@ -146,6 +141,7 @@ Iako QQ grafovi pokazuju da povrati nisu normalno raspodijeljeni, radimo tu pret
 ```{r}
 compare.to.index <- function(index) function(fund.returns) t.test(index, fund.returns, 
                                                                   paired = TRUE)
+
 mapply(compare.to.index(xs.returns$CROBEX), xs.returns[investment_funds])
 ```
 
@@ -166,17 +162,15 @@ grouped.return.means = data.frame(Date = xs.returns$Date,
                                   MeansPension = rowMeans(xs.returns[pension_funds]),
                                   MeansInvestment = rowMeans(xs.returns[investment_funds]))
 
-t.test(grouped.return.means$MeansPension, grouped.return.means$MeansInvestment, paired = TRUE)
+t <- t.test(grouped.return.means$MeansPension, grouped.return.means$MeansInvestment, paired = TRUE)
+data.frame(p=t$p.value, type=t$alternative, null=t$estimate,
+           row.names = "Pension vs. Investment fund means")
 ```
 
 
 # CAPM model
 
 ```{r}
-require(quantmod)
-require(PerformanceAnalytics)
-library(xts)
-
 dates <- xs.returns$Date
 year <- function(date) format(date, "%Y")
 get_for_year <- function(df, dates, desired_year) df[year(dates) == desired_year, ]
@@ -220,9 +214,8 @@ ggplot(xs.capm, aes(Year, Alpha, color= Fund, group = Fund)) +
 ## Provjera reziduala
 
 ```{r warning=FALSE}
-nrows = nrow(xs.capm)
 
-xs.capm["ks_p_val"] <- as.vector(0)
+nrows = nrow(xs.capm)
 get_residuals_norm <- function(df, row) {
   xs.tmpYear <- get_for_year(xs.returns, xs.returns$Date, df[row,'Year'])
   fund <- as.character(df[row, 'Fund'])
@@ -235,20 +228,18 @@ get_residuals_norm <- function(df, row) {
   
   for (i in 1:length(xs.tmpYearFund)) {
     residuals.tmp[i] <- ((xs.tmpYearFund[i] - capm.risk_free.year[i]) - 
-    (df[row,3] + df[row, 4] * (capm.market.year[i] - capm.risk_free.year[i])))
+      (df[row,3] + df[row, 4] * (capm.market.year[i] - capm.risk_free.year[i])))
   }
   
   scaled.residuals.tmp <- scale(residuals.tmp)
-  
-  x<-ks.test(scaled.residuals.tmp, 'pnorm')
-  
-  df[row, 'ks_p_val'] <- x$p.value
+  x <- ks.test(scaled.residuals.tmp, 'pnorm')
+  df[row, 'KS_p'] <- x$p.value
   
   return(df)
 }
 
 for(i in 1:nrows) {
-  xs.capm <- get_residuals_norm(xs.capm, i)
+  xs.capm <- suppressWarnings( get_residuals_norm(xs.capm, i) )
 }
 
 xs.capm
