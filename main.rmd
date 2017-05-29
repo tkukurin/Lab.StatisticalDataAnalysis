@@ -39,12 +39,6 @@ Računanje dnevnih povrata
 ```{r}
 diff_function_log <- function(St, St_minus_one) log(St) - log(St_minus_one)
 xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_log)
-#Postavljanje velikih skokova u 0
-#xs.returns$ERSTEAdriaticEquity[2211:2212] <- 0
-
-#diff_function_sub <- function(St, St_minus_one) St - St_minus_one
-#xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_sub)
-
 ```
 
 
@@ -52,13 +46,7 @@ xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_log)
 ```{r}
 xs.summary <- summary(xs.funds)
 xs.returns.summary <- summary(xs.returns[data_columns] * 365)
-# xs.log_returns.summary <- summary(xs.log_returns[data_columns])
-
-df_summary <- function(summary) {
-  return(data.frame(unclass(summary), check.names = FALSE, stringsAsFactors = FALSE))
-}
-
-df_summary(xs.returns.summary)
+data.frame(unclass(xs.returns.summary), check.names = FALSE, stringsAsFactors = FALSE)
 ```
 
 
@@ -92,10 +80,9 @@ ggplot(df, aes(Date, value)) + geom_line(aes(colour = Fondovi))
 
 ## Prikaz boxplotova za sve fondove
 
-Iz ovih se grafova vidi kako su investicijski fondovi (prva tri stupca) podložniji većim promjenama vrijednosti od mirovinskih na dnevnoj bazi.
+Iz ovih se grafova vidi kako su investicijski fondovi (prva tri stupca) na dnevnoj bazi podložniji većim promjenama vrijednosti od mirovinskih.
 
 ```{r warning=FALSE}
-
 df.returns <- melt(xs.returns[c("Date", investment_funds, pension_funds)], 
                    id.vars = 'Date', 
                    variable.name = 'Fondovi')
@@ -110,7 +97,9 @@ label_prettify <- function(label) {
   
   first_word <- ifelse(!is.na(first_matches[1, 1]), first_matches[1, 2], second_matches[1, 2])
   second_word <- ifelse(!is.na(first_matches[1, 1]), first_matches[1, 3], second_matches[1, 3])
-  second_word <- ifelse(!is.na(first_matches[1, 4]), str_c(second_word, first_matches[1, 4], sep = " "), second_word)
+  second_word <- ifelse(!is.na(first_matches[1, 4]), 
+                         str_c(second_word, first_matches[1, 4], sep = " "), 
+                         second_word)
   
   return(str_c(first_word, second_word,sep = " ") %>% str_wrap(width = 10))
 }
@@ -119,7 +108,7 @@ ggplot(df.returns, aes(Date, value)) +
   geom_boxplot(aes(Fondovi)) + 
   xlab("Fondovi") + 
   ylab("Povrati") +
-  scale_x_discrete(labels = function(labels) return(lapply(labels, label_prettify)))
+  scale_x_discrete(labels = function(labels) lapply(labels, label_prettify))
 
 ```
 
@@ -141,12 +130,6 @@ mapply(plot_returns,
        c(pension_funds, investment_funds)) %>% 
   invisible
 
-```
-
-TODO: Kolmogorov-smirnov
-
-```{r}
-
 qqplots <- function(fund.returns, fund.name) {
   qqnorm(fund.returns, main = fund.name) 
   qqline(fund.returns)
@@ -156,16 +139,6 @@ mapply(qqplots,
        c(xs.returns[c(pension_funds, investment_funds)]), 
        c(pension_funds, investment_funds)) %>% 
   invisible
-
-#PerformanceAnalytics::chart.QQPlot(xs.returns$ZBAktiv)
-#PerformanceAnalytics::chart.Regression(zbaktiv.ts, capm.m.ts, capm.rf.2010,
-#                                       excess.returns = TRUE, fit = c("loess", "linear"))
-#PerformanceAnalytics::SharpeRatio(capm.m.ts)
-
-# xs.log_returns <- lapply( xs[columns_to_log_normalize], function(list) time_series_diff(list, diff_function) )
-# xs.log_returns <- data.frame( c(xs[2:nrow(xs), !(colnames(xs) %in% columns_to_log_normalize)], xs.log_returns) )
-#xs.xts <- xts(xs['CROBEX'], order.by = xs$Date)
-
 ```
 
 
@@ -205,48 +178,13 @@ t.test(grouped.return.means$MeansPension, grouped.return.means$MeansInvestment, 
 # CAPM model
 
 ```{r}
-dates <- xs.returns$Date
-
-year <- function(date) format(date, "%Y")
-get_for_year <- function(df, dates, desired_year) df[year(dates) == desired_year, ]
-
-xs.2010 <- get_for_year(xs.returns, xs.returns$Date, 2010)
-
-zbaktiv.2010 <- xs.2010$ZBAktiv #xs.2010[c('Date', 'ZBAktiv')]
-capm.market.2010 <- xs.2010$CROBEX #xs.2010[c('Date', 'CROBEX')]
-capm.risk_free.2010 <- xs.2010$InterestRate.daily #[c('Date', 'InterestRate.daily')]
-zbaktiv.model <- lm(formula = (zbaktiv.2010 - capm.risk_free.2010) ~ (capm.market.2010 - capm.risk_free.2010))
-head(zbaktiv.model)
-```
-
-## Provjera reziduala
-
-TODO: regresija / vrijednosti i raspodjela reziduala
-
-```{r}
-# https://www.r-bloggers.com/r-tutorial-series-simple-linear-regression/
-
-zbaktiv.model.summary <- summary(zbaktiv.model)
-zbaktiv.model.residuals <- zbaktiv.model.summary$residuals
-
-hist(zbaktiv.model.residuals)
-plot(zbaktiv.model.residuals)
-abline(0,0)
-
-qqnorm(rstandard(zbaktiv.model))
-qqline(rstandard(zbaktiv.model))
-
-ks.test(rstandard(zbaktiv.model), 'pnorm')
-```
-
-# CAPM model 2
-
-TODO: tablica modela (alpha / beta) <- VERIFY
-
-```{r}
 require(quantmod)
 require(PerformanceAnalytics)
 library(xts)
+
+dates <- xs.returns$Date
+year <- function(date) format(date, "%Y")
+get_for_year <- function(df, dates, desired_year) df[year(dates) == desired_year, ]
 
 get_capm_for_year <- function(df, fund, desired_year){
   xs.year = get_for_year(df, df$Date, desired_year)
@@ -276,7 +214,6 @@ for (i in 1:length(xs.fund.names)){
 }
 
 colnames(xs.capm) <- c("Fund", "Year", "Alpha", "Beta")
-xs.capm
 
 ggplot(xs.capm, aes(Year, Beta, color= Fund, group = Fund)) + 
   geom_point() + geom_line()
@@ -285,14 +222,11 @@ ggplot(xs.capm, aes(Year, Alpha, color= Fund, group = Fund)) +
 
 ```
 
-## PROVJERA NORMALNOSTI REZIDUALA
+## Provjera reziduala
 
 ```{r warning=FALSE}
 nrows = nrow(xs.capm)
-#for(i in 1:361) {
-#  xs.capm[as.character(i)] <- as.vector(matrix(0,nrow=nrows))
-#}
-#
+
 xs.capm["ks_p_val"] <- as.vector(0)
 get_residuals_norm <- function(df, row) {
   xs.tmpYear <- get_for_year(xs.returns, xs.returns$Date, df[row,'Year'])
@@ -323,11 +257,5 @@ for(i in 1:nrows) {
 }
 
 xs.capm
-```
-
-
-# ANOVA
-```{r}
-
 ```
 
