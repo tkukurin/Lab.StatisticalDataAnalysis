@@ -23,14 +23,9 @@ investment_funds <- c("ERSTEAdriaticEquity", "OTPMeridian20", "ZBAktiv")
 pension_funds <- c("RaiffeisenDMF", "ERSTEPlaviEXPERT", "ERSTEPlaviPROTECT")
 all_funds <- c(investment_funds, pension_funds)
 market_portfolio <- c("CROBEX")
-
-xs.market_portfolio <- to_data_frame(xs, market_portfolio, xs.market_portfolio)
-xs.investment <- to_data_frame(xs, investment_funds, xs.investment)
-xs.pension <- to_data_frame(xs, pension_funds, xs.pension)
-
 data_columns <- c(pension_funds, investment_funds, market_portfolio)
-xs.funds <- xs[, data_columns]
 
+xs.funds <- xs[, data_columns]
 ```
 
 ## Povrati
@@ -52,10 +47,10 @@ data.frame(unclass(xs.returns.summary), check.names = FALSE, stringsAsFactors = 
 
 ## Mjere raspršenosti
 ```{r}
+variances <- apply(xs.returns[all_funds] * 365, 2, var, na.rm=T) 
+std.devs <- apply(xs.returns[all_funds] * sqrt(365), 2, sd, na.rm=T)
 
-apply(xs.returns[all_funds] * 365, 2, var, na.rm=T) 
-apply(xs.returns[all_funds] * sqrt(365), 2, sd, na.rm=T)
-
+data.frame(std.devs, variances)
 ```
 
 # Grafički prikaz podataka
