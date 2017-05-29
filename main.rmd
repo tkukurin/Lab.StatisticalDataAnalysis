@@ -297,8 +297,6 @@ nrows = nrow(xs.capm)
 #
 xs.capm["ks_p_val"] <- as.vector(0)
 get_residuals_norm <- function(df, row) {
-  df <- xs.capm
-  row <- 5
   xs.tmpYear <- get_for_year(xs.returns, xs.returns$Date, df[row,'Year'])
   fund <- as.character(df[row, 'Fund'])
   xs.tmpYearFund <- xs.tmpYear[,fund]
@@ -310,11 +308,10 @@ get_residuals_norm <- function(df, row) {
   
   for (i in 1:length(xs.tmpYearFund)) {
     residuals.tmp[i] <- ((xs.tmpYearFund[i] - capm.risk_free.year[i]) - 
-    (df[row,3] + df[row, 4] * (capm.market.year[i] - capm.risk_free.year[i])))^2
+    (df[row,3] + df[row, 4] * (capm.market.year[i] - capm.risk_free.year[i])))
   }
-  
   x<-ks.test(residuals.tmp, 'pnorm')
-  x
+  
   df[row, 'ks_p_val'] <- x$p.value
   
   return(df)
@@ -331,7 +328,6 @@ xs.capm
 # ANOVA
 ```{r}
 
-#lapply()
 
 ```
 
