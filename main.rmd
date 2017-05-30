@@ -37,6 +37,7 @@ Računanje dnevnih povrata
 ```{r}
 diff_function_log <- function(St, St_minus_one) log(St) - log(St_minus_one)
 xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_log)
+xs.returns
 ```
 
 
@@ -245,3 +246,12 @@ for(i in 1:nrows) {
 xs.capm
 ```
 
+ANOVA
+```{r}
+
+fund_names <- factor(rep(c(pension_funds, investment_funds), rep(2553, 6)))
+columns <- xs.returns[4:9]
+fund_returns <- c(columns[1], columns[2], columns[3], columns[4], columns[5], columns[6])
+
+anova(lm(fund_names ~ fund_returns))
+```
