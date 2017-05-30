@@ -7,6 +7,7 @@ output: pdf_document
 Prilikom proučavanja podataka primjetili smo da vrijednost fonda ErsteAdriaticEquity za 24.1.2016. poprilično odskače od okolnih datuma. Pretragom na stranici Erste grupe ustvrdili smo pogrešku u unosu podataka te smo ručno ispravili vrijednost.
 
 ```{r}
+library(dplyr)
 library(magrittr)
 library(ggplot2)
 library(stringr)
@@ -221,7 +222,7 @@ get_residuals_norm <- function(df, row) {
   fund <- as.character(df[row, 'Fund'])
   xs.tmpYearFund <- xs.tmpYear[,fund]
   
-  capm.risk_free.year <- xs.tmpYear$InterestRate.daily #[c('Date', 'InterestRate.daily')]
+  capm.risk_free.year <- xs.tmpYear$InterestRate.daily
   capm.market.year <- xs.tmpYear$CROBEX
   
   residuals.tmp <- vector(mode="numeric", length=length(xs.tmpYearFund))
@@ -241,7 +242,53 @@ get_residuals_norm <- function(df, row) {
 for(i in 1:nrows) {
   xs.capm <- suppressWarnings( get_residuals_norm(xs.capm, i) )
 }
-
-xs.capm
 ```
+
+
+# R kvadrat test prilagodbe modela
+
+```{r}
+alpha_beta_r <- function(vals, alpha, beta, index, risk.free) {
+  
+  model <- alpha + beta * (index - risk.free) + risk.free
+  
+  SSE = (vals - model)^2 %>% sum
+  SST = (vals - mean(vals))^2 %>% sum
+  
+  return(1 - SSE / SST)
+}
+
+xs.2010 <- xs.returns[year(xs.returns$Date) == 2010, ]
+capm.raiffeisen.2010 <- xs.capm[xs.capm$Year == 2010 & xs.capm$Fund == "RaiffeisenDMF", ]
+
+alpha_beta_r(xs.2010$RaiffeisenDMF, 
+             capm.raiffeisen.2010$Alpha, 
+             capm.raiffeisen.2010$Beta, 
+             xs.2010$CROBEX, 
+             xs.2010$InterestRate.daily)
+
+model.2010 <- lm((xs.2010$RaiffeisenDMF - xs.2010$InterestRate.daily) ~ (xs.2010$CROBEX - xs.2010$InterestRate.daily))
+model.2010
+capm.raiffeisen.2010$Alpha
+capm.raiffeisen.2010$Beta
+model.2010.summary <- summary(model.2010)
+model.2010.summary$r.squared
+
+
+iterate <- function(desired_year, fund, alpha, beta) { 
+  xs.curr <- xs.returns[year(xs.returns$Date) == desired_year, ]
+  
+  return(alpha_beta_r(xs.curr[, as.character(fund)], 
+                      alpha, 
+                      beta, 
+                      xs.curr$CROBEX, 
+                      xs.curr$InterestRate.daily))
+}
+
+xs.capm$R.squared <- mapply(iterate, xs.capm$Year, xs.capm$Fund, xs.capm$Alpha, xs.capm$Beta)
+xs.capm
+
+```
+
+
 
