@@ -263,10 +263,17 @@ rsquared.from_returns <- function(desired_year, fund, alpha, beta) {
   xs.curr <- xs.returns[year(xs.returns$Date) == desired_year, ]
   fund.actual.vals <- xs.curr[, as.character(fund)]
   
-  return(alpha_beta_r(fund.actual.vals, alpha, beta, xs.curr$CROBEX, xs.curr$InterestRate.daily))
+  return(alpha_beta_r(fund.actual.vals, 
+                      alpha, beta, 
+                      xs.curr$CROBEX, 
+                      xs.curr$InterestRate.daily))
 }
 
-xs.capm$R.squared <- mapply(rsquared.from_returns, xs.capm$Year, xs.capm$Fund, xs.capm$Alpha, xs.capm$Beta)
+xs.capm$R.squared <- mapply(rsquared.from_returns, 
+                            xs.capm$Year, 
+                            xs.capm$Fund, 
+                            xs.capm$Alpha, 
+                            xs.capm$Beta)
 xs.capm
 
 ```
