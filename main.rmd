@@ -234,7 +234,7 @@ get_residuals_norm <- function(df, row) {
   
   scaled.residuals.tmp <- scale(residuals.tmp)
   x <- ks.test(scaled.residuals.tmp, 'pnorm')
-  df[row, 'KS_p'] <- x$p.value
+  df[row, 'KS.p'] <- x$p.value
   
   return(df)
 }
@@ -258,34 +258,14 @@ alpha_beta_r <- function(vals, alpha, beta, index, risk.free) {
   return(1 - SSE / SST)
 }
 
-xs.2010 <- xs.returns[year(xs.returns$Date) == 2010, ]
-capm.raiffeisen.2010 <- xs.capm[xs.capm$Year == 2010 & xs.capm$Fund == "RaiffeisenDMF", ]
-
-alpha_beta_r(xs.2010$RaiffeisenDMF, 
-             capm.raiffeisen.2010$Alpha, 
-             capm.raiffeisen.2010$Beta, 
-             xs.2010$CROBEX, 
-             xs.2010$InterestRate.daily)
-
-model.2010 <- lm((xs.2010$RaiffeisenDMF - xs.2010$InterestRate.daily) ~ (xs.2010$CROBEX - xs.2010$InterestRate.daily))
-model.2010
-capm.raiffeisen.2010$Alpha
-capm.raiffeisen.2010$Beta
-model.2010.summary <- summary(model.2010)
-model.2010.summary$r.squared
-
-
-iterate <- function(desired_year, fund, alpha, beta) { 
+rsquared.from_returns <- function(desired_year, fund, alpha, beta) {
   xs.curr <- xs.returns[year(xs.returns$Date) == desired_year, ]
+  fund.actual.vals <- xs.curr[, as.character(fund)]
   
-  return(alpha_beta_r(xs.curr[, as.character(fund)], 
-                      alpha, 
-                      beta, 
-                      xs.curr$CROBEX, 
-                      xs.curr$InterestRate.daily))
+  return(alpha_beta_r(fund.actual.vals, alpha, beta, xs.curr$CROBEX, xs.curr$InterestRate.daily))
 }
 
-xs.capm$R.squared <- mapply(iterate, xs.capm$Year, xs.capm$Fund, xs.capm$Alpha, xs.capm$Beta)
+xs.capm$R.squared <- mapply(rsquared.from_returns, xs.capm$Year, xs.capm$Fund, xs.capm$Alpha, xs.capm$Beta)
 xs.capm
 
 ```
