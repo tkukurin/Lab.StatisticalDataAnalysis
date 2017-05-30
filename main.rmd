@@ -38,6 +38,7 @@ Računanje dnevnih povrata
 ```{r}
 diff_function_log <- function(St, St_minus_one) log(St) - log(St_minus_one)
 xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_log)
+xs.returns
 ```
 
 
@@ -269,6 +270,24 @@ xs.capm$R.squared <- mapply(rsquared.from_returns, xs.capm$Year, xs.capm$Fund, x
 xs.capm
 
 ```
+
+# ANOVA
+
+```{r}
+
+anova.subset <- all_funds
+num.items <- xs.returns %>% dim %>% first
+anova.returns <- xs.returns %>% 
+  subset.data.frame(select=anova.subset) %>% 
+  unlist
+factors <- anova.subset %>% 
+  rep(rep(num.items, length(.))) %>% 
+  as.factor
+
+anova(lm(anova.returns ~ factors))
+
+```
+
 
 
 
