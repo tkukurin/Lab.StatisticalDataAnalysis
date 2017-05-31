@@ -69,7 +69,8 @@ ggplot(xs, aes(Date, CROBEX)) + geom_line()
 \newpage
 
 ## Prikaz vrijednosti investicijskih i mirovinskih fondova po danima 
-Iz grafa se vidi kako investicijski fondovi imaju veću tendenciju rasta.
+
+Iz grafa se čini kako investicijski fondovi imaju veći apsolutan rast, uz veću prosječnu vrijednost.
 ```{r}
 df <- melt(xs[c("Date", investment_funds, pension_funds)], 
            id.vars = 'Date', 
@@ -93,8 +94,10 @@ label_prettify <- function(label) {
   first_matches <- str_match(label, "(^[A-Z]+)([A-Z][a-z]+)(.*)")
   second_matches <- str_match(label, "(^[A-Z][a-z]+)([A-Z]+)")
   
-  first_word <- ifelse(!is.na(first_matches[1, 1]), first_matches[1, 2], second_matches[1, 2])
-  second_word <- ifelse(!is.na(first_matches[1, 1]), first_matches[1, 3], second_matches[1, 3])
+  first_word <- ifelse(!is.na(first_matches[1, 1]), first_matches[1, 2],
+                       second_matches[1, 2])
+  second_word <- ifelse(!is.na(first_matches[1, 1]), first_matches[1, 3], 
+                        second_matches[1, 3])
   second_word <- ifelse(!is.na(first_matches[1, 4]), 
                          str_c(second_word, first_matches[1, 4], sep = " "), 
                          second_word)
@@ -179,7 +182,8 @@ grouped.return.means = data.frame(Date = xs.returns$Date,
                                   MeansPension = rowMeans(xs.returns[pension_funds]),
                                   MeansInvestment = rowMeans(xs.returns[investment_funds]))
 
-t <- t.test(grouped.return.means$MeansPension, grouped.return.means$MeansInvestment, paired = TRUE)
+t <- t.test(grouped.return.means$MeansPension,
+            grouped.return.means$MeansInvestment, paired = TRUE)
 data.frame(p=t$p.value, type=t$alternative, null=t$estimate,
            row.names = "Pension vs. Investment fund means")
 ```
@@ -191,7 +195,7 @@ CAPM (Capital Asset pricing model) je model koji opisuje odnos između kamatne s
 
 Promatrajući koeficijente $\alpha$ i $\beta$ svakog fonda zaključujemo da bi najbolje bilo uložiti u fond ERSTEPlaviPROTECT jer ima najmanji koeficijent $\beta$ od svih fondova i poprilično visok koeficijent $\alpha$.
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 
 year <- function(date) format(date, "%Y")
 get_for_year <- function(df, dates, desired_year) df[year(dates) == desired_year, ]
@@ -366,8 +370,9 @@ anova(lm(anova.returns ~ anova.factors.funds * anova.factors.years))
 
 ```
 
+#Zaključak
 
-
+Iz svega ovoga odlučili smo da bi kao grupa investirali u ERSTEPlaviPROTECT, jer ima najbolji omjer alfa i beta parametra. Ima visoku alfu, uz nisku betu.
 
 
 
