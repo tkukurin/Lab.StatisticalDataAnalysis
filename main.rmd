@@ -197,9 +197,14 @@ get_capm_for_year <- function(df, fund, desired_year){
 
 get_capm_for_fund <- function(df, selected_fund){
   fund <- df[c('Date', selected_fund)]
+  fund.ts <- xts(fund[, -1], order.by=fund$Date)
   capm.index <- df[c('Date', 'CROBEX')]
+  capm.index.ts <- xts(capm.index[, -1], order.by=capm.index$Date)
   capm.risk_free <- df[c('Date', 'InterestRate.daily')]
-  data.frame(selected_fund, CAPM.alpha(xts(fund[, -1], order.by=fund$Date), xts(capm.index[, -1], order.by=capm.index$Date), capm.risk_free[1, -1]), CAPM.beta(xts(fund[, -1], order.by=fund$Date), xts(capm.index[, -1], order.by=capm.index$Date), capm.risk_free[1, -1]))
+  capm.risk_free.ts <- capm.risk_free[1, -1]
+  data.frame(selected_fund, 
+             CAPM.alpha(fund.ts, capm.index.ts, capm.risk_free.ts), 
+             CAPM.beta(fund.ts, capm.index.ts, capm.risk_free.ts))
 }
 
 xs.years = seq(from = 2010, by = 1, length = 7)
@@ -225,10 +230,7 @@ ggplot(xs.capm, aes(Year, Beta, color= Fund, group = Fund)) +
 ggplot(xs.capm, aes(Year, Alpha, color= Fund, group = Fund)) + 
   geom_point() + geom_line()
 
-ggplot(xs.capm.all, aes(Beta, color= Fund, group = Fund)) + 
-  geom_point() + geom_line()
-ggplot(xs.capm.all, aes(Alpha, color= Fund, group = Fund)) + 
-  geom_point() + geom_line()
+xs.capm.all
 
 ```
 
