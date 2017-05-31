@@ -173,7 +173,7 @@ data.frame(p=t$p.value, type=t$alternative, null=t$estimate,
 # CAPM model
 
 ```{r}
-dates <- xs.returns$Date
+
 year <- function(date) format(date, "%Y")
 get_for_year <- function(df, dates, desired_year) df[year(dates) == desired_year, ]
 
@@ -282,18 +282,34 @@ xs.capm
 
 ```{r}
 
-anova.subset <- all_funds
 num.items <- xs.returns %>% dim %>% first
+anova.subset <- all_funds
 anova.returns <- xs.returns %>% 
   subset.data.frame(select=anova.subset) %>% 
   unlist
-factors <- anova.subset %>% 
+anova.factors.funds <- anova.subset %>% 
   rep(rep(num.items, length(.))) %>% 
   as.factor
 
-anova(lm(anova.returns ~ factors))
+anova(lm(anova.returns ~ anova.factors.funds))
 
 ```
+
+# 2-factor ANOVA
+
+```{r}
+
+anova.factors.years <- xs.returns$Date %>% 
+  year %>% 
+  rep(length(anova.subset)) %>% 
+  as.factor
+
+anova(lm(anova.returns ~ anova.factors.funds * anova.factors.years))
+
+```
+
+
+
 
 
 
