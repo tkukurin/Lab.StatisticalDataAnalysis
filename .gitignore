@@ -1,4 +1,4 @@
 .RData
 .Rhistory
 uncommon.r
-*.csv
+#*.csv

@@ -15,6 +15,7 @@ library(stringr)
 library(xts)
 require(quantmod)
 require(PerformanceAnalytics)
+require(reshape2)
 source('data_extraction.r')
 xs <- read_normalize('./investicijski_fondovi_data.csv')
 ```
@@ -39,12 +40,6 @@ Računanje dnevnih povrata prema formuli: R(t) = log(S(t)/S(t-1))
 ```{r}
 diff_function_log <- function(St, St_minus_one) log(St) - log(St_minus_one)
 xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_log)
-```
-
-
-## Sažeci
-Prikaz mjera centralne tendencije
-```{r}
 xs.returns.summary <- summary(xs.returns[data_columns] * 365)
 data.frame(unclass(xs.returns.summary), check.names = FALSE, stringsAsFactors = FALSE)
 ```
@@ -69,7 +64,8 @@ ggplot(xs, aes(Date, CROBEX)) + geom_line()
 \newpage
 
 ## Prikaz vrijednosti investicijskih i mirovinskih fondova po danima 
-Iz grafa se vidi kako investicijski fondovi imaju veću tendenciju rasta.
+
+Iz grafa se čini kako investicijski fondovi imaju veći apsolutan rast, uz veću prosječnu vrijednost.
 ```{r}
 df <- melt(xs[c("Date", investment_funds, pension_funds)], 
            id.vars = 'Date', 
@@ -86,15 +82,15 @@ Iz ovog se grafa ne može zaključiti mnogo, ali vidi kako su investicijski fond
 df.returns <- melt(xs.returns[c("Date", investment_funds, pension_funds)], 
                    id.vars = 'Date', 
                    variable.name = 'Fondovi')
-```
 
-```{r}
 label_prettify <- function(label) {
   first_matches <- str_match(label, "(^[A-Z]+)([A-Z][a-z]+)(.*)")
   second_matches <- str_match(label, "(^[A-Z][a-z]+)([A-Z]+)")
   
-  first_word <- ifelse(!is.na(first_matches[1, 1]), first_matches[1, 2], second_matches[1, 2])
-  second_word <- ifelse(!is.na(first_matches[1, 1]), first_matches[1, 3], second_matches[1, 3])
+  first_word <- ifelse(!is.na(first_matches[1, 1]), first_matches[1, 2],
+                       second_matches[1, 2])
+  second_word <- ifelse(!is.na(first_matches[1, 1]), first_matches[1, 3], 
+                        second_matches[1, 3])
   second_word <- ifelse(!is.na(first_matches[1, 4]), 
                          str_c(second_word, first_matches[1, 4], sep = " "), 
                          second_word)
@@ -123,6 +119,7 @@ plot_returns <- function(fund.returns, fund.name) hist(fund.returns,
                                                        xlab='Log returns', 
                                                        labels=FALSE, 
                                                        breaks=100)
+
 
 mapply(plot_returns, 
        c(xs.returns[c(pension_funds, investment_funds)]), 
@@ -179,19 +176,20 @@ grouped.return.means = data.frame(Date = xs.returns$Date,
                                   MeansPension = rowMeans(xs.returns[pension_funds]),
                                   MeansInvestment = rowMeans(xs.returns[investment_funds]))
 
-t <- t.test(grouped.return.means$MeansPension, grouped.return.means$MeansInvestment, paired = TRUE)
+t <- t.test(grouped.return.means$MeansPension,
+            grouped.return.means$MeansInvestment, paired = TRUE)
 data.frame(p=t$p.value, type=t$alternative, null=t$estimate,
            row.names = "Pension vs. Investment fund means")
 ```
 \newpage
 
 # CAPM model
-CAPM (Capital Asset pricing model) je model koji opisuje odnos između kamatne stope i očekivanog povrata sredstava. Svodi se na linearnu regresiju: \\
-  $$ R_{p} - R_{f} = \alpha + \beta (R_{m} - R_{f}) + \epsilon $$ \\ gdje je $R_{p}$ prinos promatranog fonda (portfelja), $R_{m}$ prinos tržišnog (referentnog) portfelja, a $R_{f}$ je bezrizična kamatna stopa. Koeficijent $\alpha$ mjeri koliko je prinos promatranog fonda veći od prinosa tržišnog portfelja, a $\beta$ mjeri osjetljivost fonda na tržišne prinose i predstavlja rizičnost. 
+CAPM (Capital Asset pricing model) je model koji opisuje odnos između kamatne stope i očekivanog povrata sredstava. Svodi se na linearnu regresiju: 
+  $$ R_{p} - R_{f} = \alpha + \beta (R_{m} - R_{f}) + \epsilon $$  gdje je $R_{p}$ prinos promatranog fonda (portfelja), $R_{m}$ prinos tržišnog (referentnog) portfelja, a $R_{f}$ je bezrizična kamatna stopa. Koeficijent $\alpha$ mjeri koliko je prinos promatranog fonda veći od prinosa tržišnog portfelja, a $\beta$ mjeri osjetljivost fonda na tržišne prinose i predstavlja rizičnost. 
 
 Promatrajući koeficijente $\alpha$ i $\beta$ svakog fonda zaključujemo da bi najbolje bilo uložiti u fond ERSTEPlaviPROTECT jer ima najmanji koeficijent $\beta$ od svih fondova i poprilično visok koeficijent $\alpha$.
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 
 year <- function(date) format(date, "%Y")
 get_for_year <- function(df, dates, desired_year) df[year(dates) == desired_year, ]
@@ -264,6 +262,9 @@ ggplot(xs.capm.all, aes(Fund, Alpha, color= Fund, group = Fund)) +
 
 ## Provjera reziduala
 
+
+Jedna od pretpostavki pri regresijskoj analizi jest normalnost razdiobe reziduala. Sljedećom tablicom dane su p-vrijednosti, kad Kolmogorov-Smirnovljevim testom usporedimo distribucije reziduala za svaki fond po godinama i normalnu distribuciju. Kako su te vrijednosti male, odbacujemo hipotezu kako su reziduali normalno distribuirani.
+
 ```{r warning=FALSE}
 
 nrows = nrow(xs.capm)
@@ -294,7 +295,6 @@ for(i in 1:nrows) {
 }
 ```
 
-
 # Test prilagodbe modela
 
 Izračunali smo i ANOVA test na prilagodbu modela, no ne obraćamo preveliku pažnju na njega radi loših rezultata KS testa na normalnost reziduala.
@@ -310,21 +310,36 @@ alpha_beta_r <- function(vals, alpha, beta, index, risk.free) {
   return(1 - SSE / SST)
 }
 
-rsquared.from_returns <- function(desired_year, fund, alpha, beta) {
+alpha_beta_anova <- function(vals, alpha, beta, index, risk.free) {
+  
+  model <- alpha + beta * (index - risk.free) + risk.free
+  
+  n_i <- length(vals)
+  N <- 2 * n_i
+  
+  SSA <- (n_i * (vals - model)^2) %>% sum
+  SSE <- ((n_i -1) * var(vals)) %>% sum
+  
+  f <- SSA / SSE / N
+  
+  return(1 - pf(f, 1, N))
+}
+
+iterate.returns <- function(apply_fn) function(desired_year, fund, alpha, beta) {
   xs.curr <- xs.returns[year(xs.returns$Date) == desired_year, ]
   fund.actual.vals <- xs.curr[, as.character(fund)]
   
-  return(alpha_beta_r(fund.actual.vals, 
-                      alpha, beta, 
-                      xs.curr$CROBEX, 
-                      xs.curr$InterestRate.daily))
+  return(apply_fn(fund.actual.vals, 
+                  alpha, beta, 
+                  xs.curr$CROBEX, 
+                  xs.curr$InterestRate.daily))
 }
 
-xs.capm$R.squared <- mapply(rsquared.from_returns, 
-                            xs.capm$Year, 
-                            xs.capm$Fund, 
-                            xs.capm$Alpha, 
-                            xs.capm$Beta)
+xs.capm$anova <- mapply(iterate.returns(alpha_beta_anova), 
+                        xs.capm$Year, 
+                        xs.capm$Fund, 
+                        xs.capm$Alpha, 
+                        xs.capm$Beta)
 xs.capm
 
 ```
@@ -344,7 +359,8 @@ anova.factors.funds <- anova.subset %>%
   rep(rep(num.items, length(.))) %>% 
   as.factor
 
-anova(lm(anova.returns ~ anova.factors.funds))
+(anova.returns ~ anova.factors.funds) %>% 
+  lm %>% anova
 
 ```
 
@@ -359,12 +375,14 @@ anova.factors.years <- xs.returns$Date %>%
   rep(length(anova.subset)) %>% 
   as.factor
 
-anova(lm(anova.returns ~ anova.factors.funds * anova.factors.years))
+(anova.returns ~ anova.factors.funds * anova.factors.years) %>%
+  lm %>% anova
 
 ```
 
+#Zaključak
 
-
+Iz svega ovoga odlučili smo da bi kao grupa investirali u ERSTEPlaviPROTECT, jer ima najbolji omjer alfa i beta parametra. Ima visoku alfu, uz nisku betu.
 
 
 
