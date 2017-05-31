@@ -15,6 +15,7 @@ library(stringr)
 library(xts)
 require(quantmod)
 require(PerformanceAnalytics)
+require(reshape2)
 source('data_extraction.r')
 xs <- read_normalize('./investicijski_fondovi_data.csv')
 ```
@@ -39,12 +40,6 @@ Računanje dnevnih povrata prema formuli: R(t) = log(S(t)/S(t-1))
 ```{r}
 diff_function_log <- function(St, St_minus_one) log(St) - log(St_minus_one)
 xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_log)
-```
-
-
-## Sažeci
-Prikaz mjera centralne tendencije
-```{r}
 xs.returns.summary <- summary(xs.returns[data_columns] * 365)
 data.frame(unclass(xs.returns.summary), check.names = FALSE, stringsAsFactors = FALSE)
 ```
@@ -87,9 +82,7 @@ Iz ovog se grafa ne može zaključiti mnogo, ali vidi kako su investicijski fond
 df.returns <- melt(xs.returns[c("Date", investment_funds, pension_funds)], 
                    id.vars = 'Date', 
                    variable.name = 'Fondovi')
-```
 
-```{r}
 label_prettify <- function(label) {
   first_matches <- str_match(label, "(^[A-Z]+)([A-Z][a-z]+)(.*)")
   second_matches <- str_match(label, "(^[A-Z][a-z]+)([A-Z]+)")
@@ -126,6 +119,7 @@ plot_returns <- function(fund.returns, fund.name) hist(fund.returns,
                                                        xlab='Log returns', 
                                                        labels=FALSE, 
                                                        breaks=100)
+
 
 mapply(plot_returns, 
        c(xs.returns[c(pension_funds, investment_funds)]), 
@@ -301,7 +295,6 @@ for(i in 1:nrows) {
 }
 ```
 
-
 # Test prilagodbe modela
 
 Izračunali smo i ANOVA test na prilagodbu modela, no ne obraćamo preveliku pažnju na njega radi loših rezultata KS testa na normalnost reziduala.
@@ -317,21 +310,36 @@ alpha_beta_r <- function(vals, alpha, beta, index, risk.free) {
   return(1 - SSE / SST)
 }
 
-rsquared.from_returns <- function(desired_year, fund, alpha, beta) {
+alpha_beta_anova <- function(vals, alpha, beta, index, risk.free) {
+  
+  model <- alpha + beta * (index - risk.free) + risk.free
+  
+  n_i <- length(vals)
+  N <- 2 * n_i
+  
+  SSA <- (n_i * (vals - model)^2) %>% sum
+  SSE <- ((n_i -1) * var(vals)) %>% sum
+  
+  f <- SSA / SSE / N
+  
+  return(1 - pf(f, 1, N))
+}
+
+iterate.returns <- function(apply_fn) function(desired_year, fund, alpha, beta) {
   xs.curr <- xs.returns[year(xs.returns$Date) == desired_year, ]
   fund.actual.vals <- xs.curr[, as.character(fund)]
   
-  return(alpha_beta_r(fund.actual.vals, 
-                      alpha, beta, 
-                      xs.curr$CROBEX, 
-                      xs.curr$InterestRate.daily))
+  return(apply_fn(fund.actual.vals, 
+                  alpha, beta, 
+                  xs.curr$CROBEX, 
+                  xs.curr$InterestRate.daily))
 }
 
-xs.capm$R.squared <- mapply(rsquared.from_returns, 
-                            xs.capm$Year, 
-                            xs.capm$Fund, 
-                            xs.capm$Alpha, 
-                            xs.capm$Beta)
+xs.capm$anova <- mapply(iterate.returns(alpha_beta_anova), 
+                        xs.capm$Year, 
+                        xs.capm$Fund, 
+                        xs.capm$Alpha, 
+                        xs.capm$Beta)
 xs.capm
 
 ```
@@ -351,7 +359,8 @@ anova.factors.funds <- anova.subset %>%
   rep(rep(num.items, length(.))) %>% 
   as.factor
 
-anova(lm(anova.returns ~ anova.factors.funds))
+(anova.returns ~ anova.factors.funds) %>% 
+  lm %>% anova
 
 ```
 
@@ -366,7 +375,8 @@ anova.factors.years <- xs.returns$Date %>%
   rep(length(anova.subset)) %>% 
   as.factor
 
-anova(lm(anova.returns ~ anova.factors.funds * anova.factors.years))
+(anova.returns ~ anova.factors.funds * anova.factors.years) %>%
+  lm %>% anova
 
 ```
 
