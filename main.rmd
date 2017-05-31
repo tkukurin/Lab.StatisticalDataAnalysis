@@ -186,8 +186,8 @@ data.frame(p=t$p.value, type=t$alternative, null=t$estimate,
 \newpage
 
 # CAPM model
-CAPM (Capital Asset pricing model) je model koji opisuje odnos između kamatne stope i očekivanog povrata sredstava. Svodi se na linearnu regresiju: \\
-  $$ R_{p} - R_{f} = \alpha + \beta (R_{m} - R_{f}) + \epsilon $$ \\ gdje je $R_{p}$ prinos promatranog fonda (portfelja), $R_{m}$ prinos tržišnog (referentnog) portfelja, a $R_{f}$ je bezrizična kamatna stopa. Koeficijent $\alpha$ mjeri koliko je prinos promatranog fonda veći od prinosa tržišnog portfelja, a $\beta$ mjeri osjetljivost fonda na tržišne prinose i predstavlja rizičnost. 
+CAPM (Capital Asset pricing model) je model koji opisuje odnos između kamatne stope i očekivanog povrata sredstava. Svodi se na linearnu regresiju: 
+  $$ R_{p} - R_{f} = \alpha + \beta (R_{m} - R_{f}) + \epsilon $$  gdje je $R_{p}$ prinos promatranog fonda (portfelja), $R_{m}$ prinos tržišnog (referentnog) portfelja, a $R_{f}$ je bezrizična kamatna stopa. Koeficijent $\alpha$ mjeri koliko je prinos promatranog fonda veći od prinosa tržišnog portfelja, a $\beta$ mjeri osjetljivost fonda na tržišne prinose i predstavlja rizičnost. 
 
 Promatrajući koeficijente $\alpha$ i $\beta$ svakog fonda zaključujemo da bi najbolje bilo uložiti u fond ERSTEPlaviPROTECT jer ima najmanji koeficijent $\beta$ od svih fondova i poprilično visok koeficijent $\alpha$.
 
