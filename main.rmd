@@ -7,6 +7,7 @@ output: pdf_document
 Prilikom proučavanja podataka primjetili smo da vrijednost fonda ErsteAdriaticEquity za 24.1.2016. poprilično odskače od okolnih datuma. Pretragom na stranici Erste grupe ustvrdili smo pogrešku u unosu podataka te smo ručno ispravili vrijednost.
 
 ```{r}
+library(reshape2)
 library(dplyr)
 library(magrittr)
 library(ggplot2)
@@ -194,9 +195,17 @@ get_capm_for_year <- function(df, fund, desired_year){
              CAPM.beta(fund.ts, capm.index.ts, capm.risk_free.year))
 }
 
+get_capm_for_fund <- function(df, selected_fund){
+  fund <- df[c('Date', selected_fund)]
+  capm.index <- df[c('Date', 'CROBEX')]
+  capm.risk_free <- df[c('Date', 'InterestRate.daily')]
+  data.frame(selected_fund, CAPM.alpha(xts(fund[, -1], order.by=fund$Date), xts(capm.index[, -1], order.by=capm.index$Date), capm.risk_free[1, -1]), CAPM.beta(xts(fund[, -1], order.by=fund$Date), xts(capm.index[, -1], order.by=capm.index$Date), capm.risk_free[1, -1]))
+}
+
 xs.years = seq(from = 2010, by = 1, length = 7)
 xs.fund.names = c(investment_funds, pension_funds)
 xs.capm <- data.frame(matrix(ncol = 3, nrow = 0))
+xs.capm.all <- data.frame(matrix(ncol = 3, nrow = 0))
 
 for (i in 1:length(xs.fund.names)){
   for (j in 1:length(xs.years)){
@@ -204,11 +213,21 @@ for (i in 1:length(xs.fund.names)){
   }
 }
 
+for (i in 1:length(xs.fund.names)){
+  xs.capm.all <- rbind(xs.capm.all, get_capm_for_fund(xs.returns, xs.fund.names[i]))
+}
+
 colnames(xs.capm) <- c("Fund", "Year", "Alpha", "Beta")
+colnames(xs.capm.all) <- c("Fund", "Alpha", "Beta")
 
 ggplot(xs.capm, aes(Year, Beta, color= Fund, group = Fund)) + 
   geom_point() + geom_line()
 ggplot(xs.capm, aes(Year, Alpha, color= Fund, group = Fund)) + 
+  geom_point() + geom_line()
+
+ggplot(xs.capm.all, aes(Beta, color= Fund, group = Fund)) + 
+  geom_point() + geom_line()
+ggplot(xs.capm.all, aes(Alpha, color= Fund, group = Fund)) + 
   geom_point() + geom_line()
 
 ```
