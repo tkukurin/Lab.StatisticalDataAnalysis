@@ -6,9 +6,7 @@ output: pdf_document
 ### Učitavanje podataka i  pomoćnih biblioteka
 Prilikom proučavanja podataka primjetili smo da vrijednost fonda ErsteAdriaticEquity za 24.1.2016. poprilično odskače od okolnih datuma. Pretragom na stranici Erste grupe ustvrdili smo pogrešku u unosu podataka te smo ručno ispravili vrijednost.
 
-
 ```{r message=FALSE, warning=FALSE}
-
 library(reshape2)
 library(dplyr)
 library(magrittr)
@@ -167,7 +165,7 @@ mapply(compare.to.index(xs.returns$CROBEX), xs.returns[investment_funds])
 
 ## Testovi povrata mirovinskih fondova u odnosu na CROBEX
 
-Za H0 hipotezu uzimamo kako su sredine mirovinskih fondova i CROBEX indeksa jednake. Iz sljedećih testova zaključujemo da možemo odbaciti H0 hipotezu uz nivo značajnosti 10%.k
+Za H0 hipotezu uzimamo kako su sredine mirovinskih fondova i CROBEX indeksa jednake. Iz sljedećih testova zaključujemo da ne možemo odbaciti H0 hipotezu uz nivo značajnosti 5% za fondove RaiffeisenDMF i ERSTEPlaviPROTECT, dok za ERSTEPlaviEXPERT možemo.
 ```{r}
 mapply(compare.to.index(xs.returns$CROBEX), xs.returns[pension_funds])
 ```
@@ -212,22 +210,9 @@ get_capm_for_year <- function(df, fund, desired_year){
              CAPM.beta(fund.ts, capm.index.ts, capm.risk_free.year))
 }
 
-get_capm_for_fund <- function(df, selected_fund){
-  fund <- df[c('Date', selected_fund)]
-  fund.ts <- xts(fund[, -1], order.by=fund$Date)
-  capm.index <- df[c('Date', 'CROBEX')]
-  capm.index.ts <- xts(capm.index[, -1], order.by=capm.index$Date)
-  capm.risk_free <- df[c('Date', 'InterestRate.daily')]
-  capm.risk_free.ts <- capm.risk_free[1, -1]
-  data.frame(selected_fund, 
-             CAPM.alpha(fund.ts, capm.index.ts, capm.risk_free.ts), 
-             CAPM.beta(fund.ts, capm.index.ts, capm.risk_free.ts))
-}
-
 xs.years = seq(from = 2010, by = 1, length = 7)
 xs.fund.names = c(investment_funds, pension_funds)
 xs.capm <- data.frame(matrix(ncol = 3, nrow = 0))
-xs.capm.all <- data.frame(matrix(ncol = 3, nrow = 0))
 
 for (i in 1:length(xs.fund.names)){
   for (j in 1:length(xs.years)){
@@ -235,19 +220,12 @@ for (i in 1:length(xs.fund.names)){
   }
 }
 
-for (i in 1:length(xs.fund.names)){
-  xs.capm.all <- rbind(xs.capm.all, get_capm_for_fund(xs.returns, xs.fund.names[i]))
-}
-
 colnames(xs.capm) <- c("Fund", "Year", "Alpha", "Beta")
-colnames(xs.capm.all) <- c("Fund", "Alpha", "Beta")
 
 ggplot(xs.capm, aes(Year, Beta, color= Fund, group = Fund)) + 
   geom_point() + geom_line()
 ggplot(xs.capm, aes(Year, Alpha, color= Fund, group = Fund)) + 
   geom_point() + geom_line()
-
-xs.capm.all
 
 ```
 
