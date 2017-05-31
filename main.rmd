@@ -189,6 +189,10 @@ data.frame(p=t$p.value, type=t$alternative, null=t$estimate,
 \newpage
 
 # CAPM model
+CAPM (Capital Asset pricing model) je model koji opisuje odnos između kamatne stope i očekivanog povrata sredstava. Svodi se na linearnu regresiju: \\
+  $$ R_{p} - R_{f} = \alpha + \beta (R_{m} - R_{f}) + \epsilon $$ \\ gdje je $R_{p}$ prinos promatranog fonda (portfelja), $R_{m}$ prinos tržišnog (referentnog) portfelja, a $R_{f}$ je bezrizična kamatna stopa. Koeficijent $\alpha$ mjeri koliko je prinos promatranog fonda veći od prinosa tržišnog portfelja, a $\beta$ mjeri osjetljivost fonda na tržišne prinose i predstavlja rizičnost. 
+
+Promatrajući koeficijente $\alpha$ i $\beta$ svakog fonda zaključujemo da bi najbolje bilo uložiti u fond ERSTEPlaviPROTECT jer ima najmanji koeficijent $\beta$ od svih fondova i poprilično visok koeficijent $\alpha$.
 
 ```{r}
 
@@ -247,7 +251,17 @@ ggplot(xs.capm, aes(Year, Beta, color= Fund, group = Fund)) +
 ggplot(xs.capm, aes(Year, Alpha, color= Fund, group = Fund)) + 
   geom_point() + geom_line()
 
-xs.capm.all
+ggplot(xs.capm.all, aes(Fund, Beta, color= Fund, group = Fund)) + 
+  geom_point() + 
+  geom_line() + 
+  scale_x_discrete(labels = function(labels) lapply(labels, label_prettify)) + 
+  theme(legend.position="none")
+
+ggplot(xs.capm.all, aes(Fund, Alpha, color= Fund, group = Fund)) + 
+  geom_point() + 
+  geom_line() + 
+  scale_x_discrete(labels = function(labels) lapply(labels, label_prettify)) + 
+  theme(legend.position="none")
 
 ```
 
@@ -317,6 +331,8 @@ xs.capm
 ```
 
 # ANOVA
+
+ANOVA (ANalysis Of VAriance) je metoda koja nam pomaže da donesemo neke zaključke o razlikama između sredina više od dvije populacije. U analizi varijance pretpostavljamo da je ukupna varijabilnost u podatcima posljedica varijabilnosti podataka unutar svakog pojedinog uzorka i varijabilnosti između različitih uzoraka. Mi smatramo da je varijabilnost unutar pojedinog uzorka rezultat slučajnosti. Jedan od glavnih ciljeva analize varijance je ustanoviti jesu li razlike između različitih uzoraka također samo posljedica slučajnosti ili postoji statistički značajna razlika između uzoraka uzrokovana nekim svojstvom po kojem se pojedini uzorci (tj. populacije iz kojih su ti uzorci uzeti) razlikuju.
 
 ```{r}
 
