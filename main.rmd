@@ -246,6 +246,9 @@ ggplot(xs.capm.all, aes(Fund, Alpha, color= Fund, group = Fund)) +
 
 ## Provjera reziduala
 
+
+Jedna od pretpostavki pri regresijskoj analizi jest normalnost razdiobe reziduala. Sljedećom tablicom dane su p-vrijednosti, kad Kolmogorov-Smirnovljevim testom usporedimo distribucije reziduala za svaki fond po godinama i normalnu distribuciju. Kako su te vrijednosti male, odbacujemo hipotezu kako su reziduali normalno distribuirani.
+
 ```{r warning=FALSE}
 
 nrows = nrow(xs.capm)
