@@ -113,7 +113,7 @@ ggplot(df.returns, aes(Date, value)) +
 
 ## Provjera normalnosti dnevnih povrata fondova
 
-###Histogramima
+### Histogramima
 
 Iscrtavamo histograme povrata za svaki fond. Vidimo da imaju prilično teške repove, što ukazuje kako nisu baš normalno distribuirani.
 ```{r}
@@ -145,7 +145,6 @@ mapply(qqplots,
        c(pension_funds, investment_funds)) %>% 
   invisible
 ```
-\newpage
 
 # Testovi fondova
 
@@ -278,7 +277,9 @@ for(i in 1:nrows) {
 ```
 
 
-# R kvadrat test prilagodbe modela
+# Test prilagodbe modela
+
+Izračunali smo i ANOVA test na prilagodbu modela, no ne obraćamo preveliku pažnju na njega radi loših rezultata KS testa na normalnost reziduala.
 
 ```{r}
 alpha_beta_r <- function(vals, alpha, beta, index, risk.free) {
@@ -312,7 +313,7 @@ xs.capm
 
 # ANOVA
 
-ANOVA (ANalysis Of VAriance) je metoda koja nam pomaže da donesemo neke zaključke o razlikama između sredina više od dvije populacije. U analizi varijance pretpostavljamo da je ukupna varijabilnost u podatcima posljedica varijabilnosti podataka unutar svakog pojedinog uzorka i varijabilnosti između različitih uzoraka. Mi smatramo da je varijabilnost unutar pojedinog uzorka rezultat slučajnosti. Jedan od glavnih ciljeva analize varijance je ustanoviti jesu li razlike između različitih uzoraka također samo posljedica slučajnosti ili postoji statistički značajna razlika između uzoraka uzrokovana nekim svojstvom po kojem se pojedini uzorci (tj. populacije iz kojih su ti uzorci uzeti) razlikuju.
+ANOVA (ANalysis Of VAriance) je metoda koja nam pomaže da donesemo neke zaključke o razlikama između sredina više od dvije populacije. Ovdje analiziramo srednje vrijednosti prinosa svakog fonda, uz hipotezu da su im srednji prinosi svima jednaki (drugim riječima, želimo pokazati da u konačnici nije bitno u koji se fond ulaže). Rezultat testa potvrđuje našu hipotezu, no ipak ga uzimamo s oprezom radi nesavršenih uvjeta za obavljanje ovakvog testa.
 
 ```{r}
 
@@ -329,7 +330,9 @@ anova(lm(anova.returns ~ anova.factors.funds))
 
 ```
 
-# 2-factor ANOVA
+# Dvofaktorska ANOVA
+
+Usprkos narušenim uobičajenim pretpostavkama za dvofaktorsku ANOVu (ponajviše nezavisnosti, a zatim i normalnosti srednjih vrijednosti prinosa, što je već pokazano da ne vrijedi u ranijim odjeljcima), zanimljivo je primjetiti da dvofaktorska ANOVa ovdje pokazuje kako ukupno stanje tržišta tijekom neke godine ipak snažno utječe na prinose fondova.
 
 ```{r}
 
