@@ -3,11 +3,11 @@ title: "Mjerenje uspješnosti investicijskih fondova"
 output: pdf_document
 ---
 
-# Učitavanje podataka
+### Učitavanje podataka i  pomoćnih biblioteka
+Prilikom proučavanja podataka primjetili smo da vrijednost fonda ErsteAdriaticEquity za 24.1.2016. poprilično odskače od okolnih datuma. Pretragom na stranici Erste grupe ustvrdili smo pogrešku u unosu podataka te smo ručno ispravili vrijednost.
 
-Prilikom proučavanja podataka primjetili smo da vrijednost fonda ErsteAdriaticEquity za 24.1.2016. poprilično odskače od okolnih datuma. Pretragom na stranici Erste grupe ustvđena je pogreška u unosu podataka te smo ručno ispravili vrijednost.
-
-```{r message=FALSE}
+```{r message=FALSE, warning=FALSE}
+library(reshape2)
 library(dplyr)
 library(magrittr)
 library(ggplot2)
@@ -36,50 +36,47 @@ data_columns <- c(pension_funds, investment_funds, market_portfolio)
 
 ## Povrati
 
-Računanje dnevnih povrata
+Računanje dnevnih povrata prema formuli: R(t) = log(S(t)/S(t-1))
 ```{r}
 diff_function_log <- function(St, St_minus_one) log(St) - log(St_minus_one)
 xs.returns <- to_time_series_diff_df(xs, data_columns, diff_function_log)
-head(xs.returns)
-tail(xs.returns)
-```
-
-
-## Opis povrata prema fondu
-
-```{r}
 xs.returns.summary <- summary(xs.returns[data_columns] * 365)
 data.frame(unclass(xs.returns.summary), check.names = FALSE, stringsAsFactors = FALSE)
 ```
 
 
 ## Mjere raspršenosti
+Prikaz vrijednosti standardne devijacije i varijance za svaki fond
 ```{r}
 variances <- apply(xs.returns[all_funds] * 365, 2, var, na.rm = T) 
 std.devs <- apply(xs.returns[all_funds] * sqrt(365), 2, sd, na.rm = T)
 
 data.frame(std.devs, variances)
 ```
-
+\newpage
 # Grafički prikaz podataka
 
 ## Prikaz vrijednosti CROBEX-a po danima
+Kretanje vrijednosti burzovnog indeksa od početka 2010. godine do kraja 2016. godine.
 ```{r}
 ggplot(xs, aes(Date, CROBEX)) + geom_line()
 ```
+\newpage
 
 ## Prikaz vrijednosti investicijskih i mirovinskih fondova po danima 
 
+Iz grafa se čini kako investicijski fondovi imaju veći apsolutan rast, uz veću prosječnu vrijednost.
 ```{r}
 df <- melt(xs[c("Date", investment_funds, pension_funds)], 
            id.vars = 'Date', 
            variable.name = 'Fondovi')
 ggplot(df, aes(Date, value)) + geom_line(aes(colour = Fondovi))
 ```
+\newpage
 
 ## Prikaz boxplotova za sve fondove
 
-Iz ovih se grafova vidi kako su investicijski fondovi (prva tri stupca) na dnevnoj bazi podložniji većim promjenama vrijednosti od mirovinskih.
+Iz ovog se grafa ne može zaključiti mnogo, ali vidi kako su investicijski fondovi (prva tri stupca) na dnevnoj bazi podložniji većim promjenama vrijednosti od mirovinskih, jer ima više stršećih vrijednosti.
 
 ```{r warning=FALSE}
 df.returns <- melt(xs.returns[c("Date", investment_funds, pension_funds)], 
@@ -90,8 +87,10 @@ label_prettify <- function(label) {
   first_matches <- str_match(label, "(^[A-Z]+)([A-Z][a-z]+)(.*)")
   second_matches <- str_match(label, "(^[A-Z][a-z]+)([A-Z]+)")
   
-  first_word <- ifelse(!is.na(first_matches[1, 1]), first_matches[1, 2], second_matches[1, 2])
-  second_word <- ifelse(!is.na(first_matches[1, 1]), first_matches[1, 3], second_matches[1, 3])
+  first_word <- ifelse(!is.na(first_matches[1, 1]), first_matches[1, 2],
+                       second_matches[1, 2])
+  second_word <- ifelse(!is.na(first_matches[1, 1]), first_matches[1, 3], 
+                        second_matches[1, 3])
   second_word <- ifelse(!is.na(first_matches[1, 4]), 
                          str_c(second_word, first_matches[1, 4], sep = " "), 
                          second_word)
@@ -108,22 +107,31 @@ ggplot(df.returns, aes(Date, value)) +
 ```
 
 
-## Provjera normalnosti
+## Provjera normalnosti dnevnih povrata fondova
 
-Sljedećim QQ grafovima želimo ispitati normalnost distribucije burzovnog indeksa. Iz QQ grafa vidimo kako podaci nisu u potpunosti normalni, a iz histograma jasno je i zašto. Teške repove primjećujemo radi sitne granulacije, tj. dnevnog računanja prinosa; u tako kratkom roku zna se dogoditi da pojedina dionica ili naglo naraste ili naglo padne u vrijednosti.
+### Histogramima
 
+Iscrtavamo histograme povrata za svaki fond. Vidimo da imaju prilično teške repove, što ukazuje kako nisu baš normalno distribuirani.
 ```{r}
 plot_returns <- function(fund.returns, fund.name) hist(fund.returns, 
                                                        main = fund.name, 
                                                        density=20, 
-                                                       xlab='Logaritamski povrati', 
-                                                       labels=TRUE, 
-                                                       breaks=10)
+                                                       xlab='Log returns', 
+                                                       labels=FALSE, 
+                                                       breaks=100)
+
+
 mapply(plot_returns, 
        c(xs.returns[c(pension_funds, investment_funds)]), 
        c(pension_funds, investment_funds)) %>% 
   invisible
+```
 
+### QQ grafovima
+
+Sljedećim QQ grafovima želimo ispitati normalnost distribucije povrata svih fondova. Teške repove primjećujemo radi sitne granulacije, tj. dnevnog računanja prinosa; u tako kratkom roku zna se dogoditi da pojedina dionica ili naglo naraste ili naglo padne u vrijednosti.
+
+```{r}
 qqplots <- function(fund.returns, fund.name) {
   qqnorm(fund.returns, main = fund.name) 
   qqline(fund.returns)
@@ -135,13 +143,14 @@ mapply(qqplots,
   invisible
 ```
 
-
 # Testovi fondova
 
 Iako QQ grafovi pokazuju da povrati nisu normalno raspodijeljeni, radimo tu pretpostavku s obzirom na robusnost T-testa. Jasno je da globalni događaji (kriza, teroristički napadi,...) često utječu na cijelo tržište odjednom, pa koristimo T-testove za uparene podatke.
 
 
 ## Testovi povrata investicijskih fondova u odnosu na CROBEX
+
+Za H0 hipotezu uzimamo kako su sredine investicijskih fondova i CROBEX indeksa jednake. Iz sljedećih testova vidimo da ne možemo opovrgnuti tu hipozetu.
 ```{r}
 compare.to.index <- function(index) function(fund.returns) t.test(index, fund.returns, 
                                                                   paired = TRUE)
@@ -152,6 +161,7 @@ mapply(compare.to.index(xs.returns$CROBEX), xs.returns[investment_funds])
 
 ## Testovi povrata mirovinskih fondova u odnosu na CROBEX
 
+Za H0 hipotezu uzimamo kako su sredine mirovinskih fondova i CROBEX indeksa jednake. Iz sljedećih testova zaključujemo da ne možemo odbaciti H0 hipotezu uz nivo značajnosti 5% za fondove RaiffeisenDMF i ERSTEPlaviPROTECT, dok za ERSTEPlaviEXPERT možemo.
 ```{r}
 mapply(compare.to.index(xs.returns$CROBEX), xs.returns[pension_funds])
 ```
@@ -166,15 +176,20 @@ grouped.return.means = data.frame(Date = xs.returns$Date,
                                   MeansPension = rowMeans(xs.returns[pension_funds]),
                                   MeansInvestment = rowMeans(xs.returns[investment_funds]))
 
-t <- t.test(grouped.return.means$MeansPension, grouped.return.means$MeansInvestment, paired = TRUE)
+t <- t.test(grouped.return.means$MeansPension,
+            grouped.return.means$MeansInvestment, paired = TRUE)
 data.frame(p=t$p.value, type=t$alternative, null=t$estimate,
            row.names = "Pension vs. Investment fund means")
 ```
-
+\newpage
 
 # CAPM model
+CAPM (Capital Asset pricing model) je model koji opisuje odnos između kamatne stope i očekivanog povrata sredstava. Svodi se na linearnu regresiju: 
+  $$ R_{p} - R_{f} = \alpha + \beta (R_{m} - R_{f}) + \epsilon $$  gdje je $R_{p}$ prinos promatranog fonda (portfelja), $R_{m}$ prinos tržišnog (referentnog) portfelja, a $R_{f}$ je bezrizična kamatna stopa. Koeficijent $\alpha$ mjeri koliko je prinos promatranog fonda veći od prinosa tržišnog portfelja, a $\beta$ mjeri osjetljivost fonda na tržišne prinose i predstavlja rizičnost. 
 
-```{r}
+Promatrajući koeficijente $\alpha$ i $\beta$ svakog fonda zaključujemo da bi najbolje bilo uložiti u fond ERSTEPlaviPROTECT jer ima najmanji koeficijent $\beta$ od svih fondova i poprilično visok koeficijent $\alpha$.
+
+```{r message=FALSE, warning=FALSE}
 
 year <- function(date) format(date, "%Y")
 get_for_year <- function(df, dates, desired_year) df[year(dates) == desired_year, ]
@@ -196,9 +211,22 @@ get_capm_for_year <- function(df, fund, desired_year){
              CAPM.beta(fund.ts, capm.index.ts, capm.risk_free.year))
 }
 
+get_capm_for_fund <- function(df, selected_fund){
+  fund <- df[c('Date', selected_fund)]
+  fund.ts <- xts(fund[, -1], order.by=fund$Date)
+  capm.index <- df[c('Date', 'CROBEX')]
+  capm.index.ts <- xts(capm.index[, -1], order.by=capm.index$Date)
+  capm.risk_free <- df[c('Date', 'InterestRate.daily')]
+  capm.risk_free.ts <- capm.risk_free[1, -1]
+  data.frame(selected_fund, 
+             CAPM.alpha(fund.ts, capm.index.ts, capm.risk_free.ts), 
+             CAPM.beta(fund.ts, capm.index.ts, capm.risk_free.ts))
+}
+
 xs.years = seq(from = 2010, by = 1, length = 7)
 xs.fund.names = c(investment_funds, pension_funds)
 xs.capm <- data.frame(matrix(ncol = 3, nrow = 0))
+xs.capm.all <- data.frame(matrix(ncol = 3, nrow = 0))
 
 for (i in 1:length(xs.fund.names)){
   for (j in 1:length(xs.years)){
@@ -206,16 +234,36 @@ for (i in 1:length(xs.fund.names)){
   }
 }
 
+for (i in 1:length(xs.fund.names)){
+  xs.capm.all <- rbind(xs.capm.all, get_capm_for_fund(xs.returns, xs.fund.names[i]))
+}
+
 colnames(xs.capm) <- c("Fund", "Year", "Alpha", "Beta")
+colnames(xs.capm.all) <- c("Fund", "Alpha", "Beta")
 
 ggplot(xs.capm, aes(Year, Beta, color= Fund, group = Fund)) + 
   geom_point() + geom_line()
 ggplot(xs.capm, aes(Year, Alpha, color= Fund, group = Fund)) + 
   geom_point() + geom_line()
 
+ggplot(xs.capm.all, aes(Fund, Beta, color= Fund, group = Fund)) + 
+  geom_point() + 
+  geom_line() + 
+  scale_x_discrete(labels = function(labels) lapply(labels, label_prettify)) + 
+  theme(legend.position="none")
+
+ggplot(xs.capm.all, aes(Fund, Alpha, color= Fund, group = Fund)) + 
+  geom_point() + 
+  geom_line() + 
+  scale_x_discrete(labels = function(labels) lapply(labels, label_prettify)) + 
+  theme(legend.position="none")
+
 ```
 
 ## Provjera reziduala
+
+
+Jedna od pretpostavki pri regresijskoj analizi jest normalnost razdiobe reziduala. Sljedećom tablicom dane su p-vrijednosti, kad Kolmogorov-Smirnovljevim testom usporedimo distribucije reziduala za svaki fond po godinama i normalnu distribuciju. Kako su te vrijednosti male, odbacujemo hipotezu kako su reziduali normalno distribuirani.
 
 ```{r warning=FALSE}
 
@@ -247,8 +295,9 @@ for(i in 1:nrows) {
 }
 ```
 
+# Test prilagodbe modela
 
-# R kvadrat test prilagodbe modela; ANOVA
+Izračunali smo i ANOVA test na prilagodbu modela, no ne obraćamo preveliku pažnju na njega radi loših rezultata KS testa na normalnost reziduala.
 
 ```{r}
 alpha_beta_r <- function(vals, alpha, beta, index, risk.free) {
@@ -297,6 +346,8 @@ xs.capm
 
 # ANOVA
 
+ANOVA (ANalysis Of VAriance) je metoda koja nam pomaže da donesemo neke zaključke o razlikama između sredina više od dvije populacije. Ovdje analiziramo srednje vrijednosti prinosa svakog fonda, uz hipotezu da su im srednji prinosi svima jednaki (drugim riječima, želimo pokazati da u konačnici nije bitno u koji se fond ulaže). Rezultat testa potvrđuje našu hipotezu, no ipak ga uzimamo s oprezom radi nesavršenih uvjeta za obavljanje ovakvog testa.
+
 ```{r}
 
 num.items <- xs.returns %>% dim %>% first
@@ -313,7 +364,9 @@ anova.factors.funds <- anova.subset %>%
 
 ```
 
-# 2-factor ANOVA
+# Dvofaktorska ANOVA
+
+Usprkos narušenim uobičajenim pretpostavkama za dvofaktorsku ANOVu (ponajviše nezavisnosti, a zatim i normalnosti srednjih vrijednosti prinosa, što je već pokazano da ne vrijedi u ranijim odjeljcima), zanimljivo je primjetiti da dvofaktorska ANOVa ovdje pokazuje kako ukupno stanje tržišta tijekom neke godine ipak snažno utječe na prinose fondova.
 
 ```{r}
 
@@ -327,8 +380,9 @@ anova.factors.years <- xs.returns$Date %>%
 
 ```
 
+#Zaključak
 
-
+Iz svega ovoga odlučili smo da bi kao grupa investirali u ERSTEPlaviPROTECT, jer ima najbolji omjer alfa i beta parametra. Ima visoku alfu, uz nisku betu.
 
 
 
